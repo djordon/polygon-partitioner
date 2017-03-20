@@ -1,0 +1,124 @@
+import org.jeom._
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
+import com.vividsolutions.jts.triangulate.DelaunayTriangulationBuilder
+import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
+import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Envelope, Coordinate}
+import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import com.vividsolutions.jts.dissolver.LineDissolver
+import com.vividsolutions.jts.index.strtree.STRtree
+import com.vividsolutions.jts.algorithm.Angle
+
+val ans = PolygonExtractor.extractZCTAs()
+
+val geoFactory = new GeometryFactory()
+
+
+
+val polygon = geoFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
+val orthPolygon = OthogonalPolygonBuilder.build(polygon)
+
+
+val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
+val simplePoly = geoFactory.createPolygon(simplified.getCoordinates)
+
+val tmp = OthogonalPolygonBuilder.reduceColinearity(orthPolygon)
+
+GeometryUtils.plotly(tmp, Some(simplePoly))
+
+
+import GeometryUtils.IterablePolygon
+
+val verticalEdgeTree = new STRtree()
+val horizontalEdgeTree = new STRtree()
+
+implicit def coords2envelope(coords: List[Coordinate]): Envelope =
+  new Envelope(coords.head, coords.last)
+
+
+tmp.grouped(2).map(_.toList).filter(_.length > 1).foreach { 
+  pair =>
+    val env = new Envelope(pair)
+
+    if (pair.head.x == pair.last.x)
+      verticalEdgeTree.insert(env, pair.head)
+    else 
+      horizontalEdgeTree.insert(env, pair.head)
+}
+
+case class Corner(coordinate: Coordinate, isConvex: Boolean, direction: Int)
+
+object Corner {
+  def isConvexCorner(corner: List[Coordinate]): Boolean =
+    Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
+
+  def edgeDirection(vec: List[Coordinate]): Int = 
+    (Angle.angle(vec.head, vec.last) * 360 / Angle.PI_TIMES_2).toInt
+
+  def apply(coords: List[Coordinate]) =
+    new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
+}
+
+
+def getCorners(polygon: Polygon): Iterator[Corner] = {
+  val boundary: List[Coordinate] = polygon.toList.tail
+  val extended: List[Coordinate] = Stream
+    .continually(boundary)
+    .flatten
+    .take(boundary.length + 2)
+    .toList
+
+  extended.sliding(3, 1).map(Corner.apply)
+}
+
+getCorners(tmp).map(Corner.apply)
+
+
+
+val a = tmp.sliding(2, 1).map(_.toList).filter(_.length > 1).map { x =>
+  Angle.angle(x(0), x(1))
+}.toList
+
+val c1 = tmp.toList(20)
+val c2 = new Coordinate(Double.NegativeInfinity, c1.y)
+val env = new Envelope(c2, c1)
+
+tree.query(env)
+
+
+// for (i <- 0 until 20)
+//   yield Angle.interiorAngle(y(i), y(i+1), y(i+2))
+// 
+// 
+// 
+// val z = Stream.continually(boundary).flatten.take(boundary.length + 2).toList.sliding(3, 1).map(_.).toList
+// 
+// val test1 = for (y <- z)
+//   yield Angle.angleBetweenOriented(y(0), y(1), y(2)) < 0
+// 
+// val test2 = for (y <- z)
+//   yield isConvex1(y)
+// 
+// def isConvex1(triplet: List[Coordinate]): Boolean = {
+//   val x1 = triplet.head.x == triplet.tail.head.x
+//   val x2 = triplet.head.y > triplet.tail.head.y
+//   val x3 = triplet.tail.head.x > triplet.last.x
+//   val x4 = triplet.tail.head.x < triplet.last.x
+//   val x5 = triplet.tail.head.y > triplet.last.y
+//   val x6 = triplet.head.x < triplet.tail.head.x
+// 
+//   if (x1) {
+//     if (x2) {
+//       if (x4) true else false
+//     } else {
+//       if (x3) true else false
+//     }
+//   } else {
+//     if (x6) {
+//       if (!x5) true else false
+//     } else {
+//       if (x5) true else false
+//     }
+//   }
+// }
