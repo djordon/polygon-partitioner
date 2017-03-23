@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 
 import com.vividsolutions.jts.triangulate.DelaunayTriangulationBuilder
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Envelope, Coordinate}
+import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Envelope, Coordinate, LineSegment, LineString}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 import com.vividsolutions.jts.dissolver.LineDissolver
 import com.vividsolutions.jts.index.strtree.STRtree
@@ -14,7 +14,7 @@ val ans = PolygonExtractor.extractZCTAs()
 
 val geoFactory = new GeometryFactory()
 
-
+import GeometryUtils.IterablePolygon
 
 val polygon = geoFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
 val orthPolygon = OthogonalPolygonBuilder.build(polygon)
@@ -25,7 +25,7 @@ val simplePoly = geoFactory.createPolygon(simplified.getCoordinates)
 
 val tmp = OthogonalPolygonBuilder.reduceColinearity(orthPolygon)
 
-GeometryUtils.plotly(tmp, Some(simplePoly))
+GeometryUtils.plotly(tmp, Some(simplePoly), "triangulation method")
 
 
 import GeometryUtils.IterablePolygon
@@ -76,6 +76,43 @@ getCorners(tmp).map(Corner.apply)
 
 
 
+
+val MAX_ORDINATE: Double = (polygon
+  .getEnvelope.asInstanceOf[Polygon]
+  .toList
+  .flatMap(c => List(c.x, c.y))
+  .map(math.abs)
+  .max)
+
+val boundary = polygon.getBoundary
+
+val ans = polygon.toList.map { c =>
+  val c_n = new Coordinate(c.x, MAX_ORDINATE)
+  val c_e = new Coordinate(MAX_ORDINATE, c.y)
+  val c_s = new Coordinate(c.x, -MAX_ORDINATE)
+  val c_w = new Coordinate(-MAX_ORDINATE, c.y)
+  val lines = for (p <- List(c_n, c_e, c_s, c_w))
+    yield geoFactory.createLineString(Array(p, c))
+  lines.filter(_.intersection(boundary).getNumPoints == 1)
+}.filter(_.length == 2)
+
+val tmp = ans.map { lines =>
+  geoFactory
+    .createLineString(lines.flatMap(_.getCoordinates).toArray)
+    .getEnvelope
+}.filter(_.getDimension == 2).map(_.asInstanceOf[Polygon])
+
+val cover = (polygon
+  .getEnvelope
+  .difference(CascadedPolygonUnion.union(tmp.asJavaCollection))
+  .asInstanceOf[Polygon])
+
+
+GeometryUtils.plotly(cover, Some(polygon), "new method")
+
+ans.map(_.map(_.intersection(polygon.getBoundary).getDimension))
+
+new Envelope(c_n, c), new Envelope(c_e, c), new Envelope(c_s, c), new Envelope(c_w, c)
 val a = tmp.sliding(2, 1).map(_.toList).filter(_.length > 1).map { x =>
   Angle.angle(x(0), x(1))
 }.toList
