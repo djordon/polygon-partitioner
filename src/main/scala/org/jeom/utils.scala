@@ -40,7 +40,10 @@ object GeometryUtils {
     ImageIO.write(img, "png", outputFile)
   }
 
-  def plotly(polygon: Polygon, original: Option[Polygon] = None): Unit = {
+  def plotly(
+      polygon: Polygon,
+      original: Option[Polygon] = None,
+      plotName: String = "scatter-mode"): Unit = {
     import co.theasi.plotly._
 
     // if (!original.isEmpty) {
@@ -65,7 +68,7 @@ object GeometryUtils {
           .mode(ScatterMode.Marker, ScatterMode.Line)
           .name("Orthogonal Polygon Cover"))
 
-    draw(p, "scatter-mode", writer.FileOptions(overwrite=true))
+    draw(p, plotName, writer.FileOptions(overwrite=true))
   }
 }
 
