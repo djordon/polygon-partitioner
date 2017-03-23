@@ -69,7 +69,7 @@ object OthogonalPolygonBuilder {
   }
 
   def vecs2polygon(vecs: List[Vec]): Polygon = {
-    polygon = geometryFactory.createPolygon(vecs.map(_.coordinate).toArray)
+    val polygon: Polygon = geometryFactory.createPolygon(vecs.map(_.coordinate).toArray)
     polygon.normalize()
     polygon
   }

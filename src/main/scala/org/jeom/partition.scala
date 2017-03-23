@@ -29,7 +29,7 @@ object Corner {
     Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 
   def edgeDirection(vec: List[Coordinate]): Int = 
-    (Angle.angle(vec.head, vec.last) * 360 / Angle.PI_TIMES_2).toInt
+    Angle.toDegrees(Angle.angle(vec.head, vec.last)).toInt
 
   def apply(coords: List[Coordinate]) =
     new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
