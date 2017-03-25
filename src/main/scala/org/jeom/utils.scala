@@ -12,9 +12,8 @@ import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Geometr
 object GeometryUtils {
   implicit class IterableCollection(val gc: GeometryCollection) extends Iterable[Geometry] {
     override def iterator: Iterator[Geometry] = {
-      for (i <- 0 until gc.getNumGeometries)
-        yield gc.getGeometryN(i)
-    }.toIterator
+      (0 until gc.getNumGeometries).view.toIterator.map(gc.getGeometryN(_))
+    }
   }
 
   implicit class IterablePolygon(val pg: Polygon) extends Iterable[Coordinate] {
