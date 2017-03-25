@@ -12,20 +12,24 @@ import com.vividsolutions.jts.algorithm.Angle
 
 val ans = PolygonExtractor.extractZCTAs()
 
-val geoFactory = new GeometryFactory()
+val geometryFactory = new GeometryFactory()
 
 import GeometryUtils.IterablePolygon
 
-val polygon = geoFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
-val orthPolygon = OthogonalPolygonBuilder.build(polygon)
-
+val tolerance = math.pow(2, -11)
+val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
+val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance)
+val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
 
 val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
-val simplePoly = geoFactory.createPolygon(simplified.getCoordinates)
+val simplePoly = geometryFactory.createPolygon(simplified.getCoordinates)
 
 val tmp = OthogonalPolygonBuilder.reduceColinearity(orthPolygon)
 
 GeometryUtils.plotly(tmp, Some(simplePoly), "triangulation method")
+
+
+GeometryUtils.plotly(orthPolygon2, Some(polygon), "simplified 3")
 
 
 import GeometryUtils.IterablePolygon
@@ -77,14 +81,69 @@ getCorners(tmp).map(Corner.apply)
 
 
 
-val MAX_ORDINATE: Double = (polygon
-  .getEnvelope.asInstanceOf[Polygon]
-  .toList
-  .flatMap(c => List(c.x, c.y))
-  .map(math.abs)
-  .max)
+val MAX_ORDINATE: Double = (1 + polygon
+    .getEnvelope.asInstanceOf[Polygon]
+    .toList
+    .flatMap(c => List(c.x, c.y))
+    .map(math.abs)
+    .max)
+
+def getMaxOrdinate(polygon: Polygon): Double = {
+  1.0 + polygon
+    .getEnvelope.asInstanceOf[Polygon]
+    .toList
+    .flatMap(c => List(c.x, c.y))
+    .map(math.abs)
+    .max
+}
+
+def potentialTangents(c: Coordinate, sup: Double): List[LineString] = {
+  val poles = List(new Coordinate(c.x, sup), new Coordinate(c.x, -sup),
+                  new Coordinate(sup, c.y), new Coordinate(-sup, c.y))
+  poles map { p => geometryFactory.createLineString(Array(p, c)) }
+}
+
+
+def filterTangents(lines: List[LineString], boundary: Geometry): List[LineString] =
+  lines.filter(_.touches(boundary))
+
+
+def tangents2rectangle(lines: List[LineString]): Geometry = {
+  geometryFactory
+    .createLineString(lines.flatMap(_.getCoordinates).toArray)
+    .getEnvelope
+}
+
+
+def makeTangentRectangles(polygon: Polygon, tol: Double) = {
+  val boundary: Geometry = polygon.getBoundary
+  val simpler: Polygon = DouglasPeuckerSimplifier
+    .simplify(polygon, tol)
+    .asInstanceOf[Polygon]
+
+  val sup: Double = getMaxOrdinate(polygon)
+
+  simpler
+    .map(potentialTangents(_, sup))
+    .map(filterTangents(_, boundary))
+    .filter(_.length == 2)
+    .map(tangents2rectangle)
+}
+
+def orthogonalCover(polygon, tol: Double = 0.0001): Polygon = {
+  val rectangles: Iterable[Geometry] = makeTangentRectangles(polygon, tol)
+
+  polygon
+    .getEnvelope
+    .difference(CascadedPolygonUnion.union(rectangles.asJavaCollection))
+    .asInstanceOf[Polygon]
+}
 
 val boundary = polygon.getBoundary
+
+val tol = scala.math.pow(2, -13)
+
+
 
 val ans = polygon.toList.map { c =>
   val c_n = new Coordinate(c.x, MAX_ORDINATE)
@@ -92,15 +151,16 @@ val ans = polygon.toList.map { c =>
   val c_s = new Coordinate(c.x, -MAX_ORDINATE)
   val c_w = new Coordinate(-MAX_ORDINATE, c.y)
   val lines = for (p <- List(c_n, c_e, c_s, c_w))
-    yield geoFactory.createLineString(Array(p, c))
-  lines.filter(_.intersection(boundary).getNumPoints == 1)
-}.filter(_.length == 2)
+    yield geometryFactory.createLineString(Array(p, c))
+  lines.filter(_.touches(boundary))
+}
 
-val tmp = ans.map { lines =>
-  geoFactory
+
+val tmp = ans.filter(_.length == 2).map { lines =>
+  geometryFactory
     .createLineString(lines.flatMap(_.getCoordinates).toArray)
     .getEnvelope
-}.filter(_.getDimension == 2).map(_.asInstanceOf[Polygon])
+}
 
 val cover = (polygon
   .getEnvelope
@@ -108,7 +168,7 @@ val cover = (polygon
   .asInstanceOf[Polygon])
 
 
-GeometryUtils.plotly(cover, Some(polygon), "new method")
+GeometryUtils.plotly(cover, Some(polygon), "new method simplified")
 
 ans.map(_.map(_.intersection(polygon.getBoundary).getDimension))
 
@@ -159,3 +219,23 @@ tree.query(env)
 //     }
 //   }
 // }
+
+import org.scalameter._
+val tolerance = scala.math.pow(2, -11)
+val time = config(
+  Key.exec.benchRuns -> 20,
+  Key.verbose -> true
+) withWarmer {
+  new Warmer.Default
+} withMeasurer {
+  new Measurer.IgnoringGC
+} measure {
+  OrthogonalPolygonBuilder.build(polygon)
+}
+
+println(s"Total time: $time")
+
+
+val poly1 = OrthogonalPolygonBuilder.build(polygon, 0, 3)
+val poly = OrthogonalPolygonBuilder.build(poly1, rotundity = 3)
+GeometryUtils.plotly(poly, Some(polygon), "another improved method")
