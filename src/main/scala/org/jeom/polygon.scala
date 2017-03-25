@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import com.vividsolutions.jts.triangulate.DelaunayTriangulationBuilder
-import com.vividsolutions.jts.geom.{GeometryFactory, GeometryCollection, Geometry, Polygon, Coordinate}
+import com.vividsolutions.jts.geom.{GeometryFactory, GeometryCollection, Geometry, Polygon, Coordinate, LineString, LinearRing}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
 
@@ -26,7 +26,7 @@ object Vec {
 }
 
 
-object OthogonalPolygonBuilder {
+object OrthogonalPolygonBuilder2 {
   import GeometryUtils.{IterableCollection, IterablePolygon}
 
   val tol: Double = scala.math.pow(2, -13)
@@ -52,15 +52,80 @@ object OthogonalPolygonBuilder {
       .union(rectangularCover.asJavaCollection)
       .asInstanceOf[Polygon]
   }
+}
 
-  def polygon2vecs(pg: Polygon): List[Vec] = {
+
+
+object OrthogonalPolygonBuilder3 {
+  import GeometryUtils.IterablePolygon
+
+  val tol: Double = scala.math.pow(2, -13)
+  val geometryFactory = new GeometryFactory()
+
+  def getMaxOrdinate(polygon: Polygon): Double = {
+    1.0 + polygon
+      .getEnvelope.asInstanceOf[Polygon]
+      .toList
+      .flatMap(c => List(c.x, c.y))
+      .map(math.abs)
+      .max
+  }
+
+  def potentialTangents(c: Coordinate, sup: Double): List[LineString] = {
+    val poles = List(new Coordinate(c.x, sup), new Coordinate(c.x, -sup),
+                    new Coordinate(sup, c.y), new Coordinate(-sup, c.y))
+    poles map { p => geometryFactory.createLineString(Array(p, c)) }
+  }
+
+  def filterTangents(lines: List[LineString], boundary: Geometry): List[LineString] =
+    lines.filter(_.touches(boundary))
+
+  def lines2rectangle(lines: List[LineString]): Geometry = {
+    geometryFactory
+      .createLineString(lines.flatMap(_.getCoordinates).toArray)
+      .getEnvelope
+  }
+
+  def makeTangentRectangles(polygon: Polygon, tolerance: Double) = {
+    // val boundary: Geometry = polygon.getBoundary
+    val simpler: Polygon = DouglasPeuckerSimplifier
+      .simplify(polygon, tolerance)
+      .asInstanceOf[Polygon]
+
+    val sup: Double = getMaxOrdinate(polygon)
+
+    simpler
+      .map(potentialTangents(_, sup))
+      .map(filterTangents(_, polygon))
+      .filter(_.length > 1)
+      .map(lines2rectangle)
+  }
+
+  def build(polygon: Polygon, tolerance: Double = tol): Polygon = {
+    val rectangles: Iterable[Geometry] = makeTangentRectangles(polygon, tolerance)
+    val boundary: Array[Coordinate] = CascadedPolygonUnion
+      .union(rectangles.asJavaCollection)
+      .asInstanceOf[Polygon]
+      .getInteriorRingN(0)
+      .getCoordinates
+
+    geometryFactory.createPolygon(boundary)
+  }
+}
+
+
+object OrthogonalPolygonSimplifier {
+  import GeometryUtils.IterablePolygon
+  val geometryFactory = new GeometryFactory()
+
+  private def polygon2vecs(pg: Polygon): List[Vec] = {
     pg.toList
       .sliding(2, 1)
       .map(Vec.vecConstructor)
       .toList
   }
 
-  def filterVecs(vecs: List[Vec]): List[Vec] = {
+  private def filterVecs(vecs: List[Vec]): List[Vec] = {
     val reduced: List[Vec] = vecs
       .tail
       .foldLeft(List(vecs.head))(Vec.vecFilter)
@@ -68,13 +133,46 @@ object OthogonalPolygonBuilder {
     reduced :+ reduced.head
   }
 
-  def vecs2polygon(vecs: List[Vec]): Polygon = {
+  private def vecs2polygon(vecs: List[Vec]): Polygon = {
     val polygon: Polygon = geometryFactory.createPolygon(vecs.map(_.coordinate).toArray)
     polygon.normalize()
     polygon
   }
 
-  def reduceColinearity: Polygon => Polygon = 
+  def removeColinearity: Polygon => Polygon = 
     polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _ 
+}
 
+
+object OrthogonalPolygonBuilder {
+  import GeometryUtils.IterablePolygon
+
+  val tol: Double = scala.math.pow(2, -12)
+  val rot: Int = 8
+  val geometryFactory = new GeometryFactory()
+
+  def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
+    geometryFactory
+      .createLineString(points.toArray)
+      .getEnvelope
+  }
+
+  def build(polygon: Polygon, tolerance: Double = tol, rotundity: Int = rot): Polygon = {
+    val simpler: Polygon = DouglasPeuckerSimplifier
+      .simplify(polygon, tolerance)
+      .asInstanceOf[Polygon]
+
+    val coveringRectangles = simpler
+      .sliding(math.max(rot, 2), math.max(rot / 2, 1))
+      .map(coverCoordinates)
+      .toList
+
+    val newBoundary = CascadedPolygonUnion
+      .union(coveringRectangles.asJavaCollection)
+      .asInstanceOf[Polygon]
+      .getExteriorRing
+
+    OrthogonalPolygonSimplifier removeColinearity
+      geometryFactory.createPolygon(newBoundary.getCoordinates)
+  }
 }
