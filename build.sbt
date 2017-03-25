@@ -21,11 +21,17 @@ lazy val projectSettings = Seq(
 
   resolvers += Resolver.sonatypeRepo("releases"),
   resolvers += Resolver.url("GeoTools", url("http://download.osgeo.org/webdav/geotools/")),
+  resolvers += "Sonatype OSS Snapshots" at
+    "https://oss.sonatype.org/content/repositories/snapshots",
 
   libraryDependencies ++= Seq(
     // "org.locationtech.jts" % "jts-core" % "1.14.0",
     "com.vividsolutions" % "jts-core" % "1.14.0",
     "org.geotools.jdbc" % "gt-jdbc-postgis" % "16.2",
+
+    // Profiling
+    "com.storm-enroute" %% "scalameter-core" % "0.7",
+    // "com.storm-enroute" %% "scalameter" % "0.7",
 
     // DB Libraries
     "org.tpolecat" %% "doobie-core" % "0.4.0",
