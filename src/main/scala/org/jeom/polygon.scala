@@ -87,7 +87,6 @@ object OrthogonalPolygonBuilder3 {
   }
 
   def makeTangentRectangles(polygon: Polygon, tolerance: Double) = {
-    // val boundary: Geometry = polygon.getBoundary
     val simpler: Polygon = DouglasPeuckerSimplifier
       .simplify(polygon, tolerance)
       .asInstanceOf[Polygon]
@@ -134,13 +133,14 @@ object OrthogonalPolygonSimplifier {
   }
 
   private def vecs2polygon(vecs: List[Vec]): Polygon = {
-    val polygon: Polygon = geometryFactory.createPolygon(vecs.map(_.coordinate).toArray)
-    polygon.normalize()
-    polygon
+    geometryFactory
+      .createPolygon(vecs.map(_.coordinate).toArray)
+      .norm
+      .asInstanceOf[Polygon]
   }
 
   def removeColinearity: Polygon => Polygon = 
-    polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _ 
+    polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _
 }
 
 
@@ -148,7 +148,6 @@ object OrthogonalPolygonBuilder {
   import GeometryUtils.IterablePolygon
 
   val tol: Double = scala.math.pow(2, -12)
-  val rot: Int = 8
   val geometryFactory = new GeometryFactory()
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
@@ -157,17 +156,20 @@ object OrthogonalPolygonBuilder {
       .getEnvelope
   }
 
-  def build(polygon: Polygon, tolerance: Double = tol, rotundity: Int = rot): Polygon = {
+  def build(polygon: Polygon, tolerance: Double = tol, size: Int = 3, step: Int = 1): Polygon = {
     val simpler: Polygon = DouglasPeuckerSimplifier
-      .simplify(polygon, tolerance)
+      .simplify(polygon, tolerance.max(0))
       .asInstanceOf[Polygon]
 
-    val coveringRectangles = simpler
-      .sliding(math.max(rot, 2), math.max(rot / 2, 1))
+    val length: Int = size.max(3)
+    val window: Int = step.min(length - 2).max(1)
+
+    val coveringRectangles: List[Geometry] = simpler
+      .sliding(length, window)
       .map(coverCoordinates)
       .toList
 
-    val newBoundary = CascadedPolygonUnion
+    val newBoundary: LineString = CascadedPolygonUnion
       .union(coveringRectangles.asJavaCollection)
       .asInstanceOf[Polygon]
       .getExteriorRing
