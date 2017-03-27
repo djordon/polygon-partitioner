@@ -3,37 +3,47 @@ package org.jeom
 // import scala.collection.JavaConverters._
 
 import com.vividsolutions.jts.algorithm.Angle
-import com.vividsolutions.jts.geom.{Polygon, Envelope, Coordinate}
+import com.vividsolutions.jts.geom.{Polygon, LineString, Coordinate}
 import com.vividsolutions.jts.index.strtree.STRtree
 
 import GeometryUtils.IterablePolygon
 
 
-case class Corner(coord: Coordinate, isConvex: Boolean, direction: Int) {
-  def extend: Envelope = {
-    val p0: Coordinate = direction match {
-      case 0 => new Coordinate(Double.PositiveInfinity, coord.y)
-      case 90 => new Coordinate(coord.x, Double.PositiveInfinity)
-      case 180 => new Coordinate(Double.NegativeInfinity, coord.y)
-      case -90 => new Coordinate(coord.x, Double.NegativeInfinity)
+case class Corner(coord: Coordinate, isConvex: Boolean, angle: Int) {
+  def extend(sup: Double): LineString = {
+    val p0: Coordinate = angle match {
+      case 0 => new Coordinate(sup, coord.y)
+      case 90 => new Coordinate(coord.x, sup)
+      case 180 => new Coordinate(sup, coord.y)
+      case -90 => new Coordinate(coord.x, sup)
       case _ => new Coordinate()
     }
   
-    new Envelope(coord, p0)
+    GeometryUtils.geometryFactory.createLineString(Array(coord, p0))
   }
+
+  def predicate(xy: Double): Boolean = angle match {
+      case 0 => xy > coord.x
+      case 90 => xy > coord.y
+      case 180 => xy < coord.x
+      case -90 => xy < coord.y
+  }
+
+  def renameMe: Double = if (angle.abs == 90) coord.x else coord.y
 }
 
 
 object Corner {
-  def isConvexCorner(corner: List[Coordinate]): Boolean =
-    Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
+  def apply(coords: List[Coordinate]) =
+    new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
 
   def edgeDirection(vec: List[Coordinate]): Int = 
     Angle.toDegrees(Angle.angle(vec.head, vec.last)).toInt
 
-  def apply(coords: List[Coordinate]) =
-    new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
+  def isConvexCorner(corner: List[Coordinate]): Boolean =
+    Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
+
 
 object Whatever {
   def getCorners(polygon: Polygon): Iterator[Corner] = {

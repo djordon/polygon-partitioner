@@ -7,7 +7,7 @@ import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
 import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Envelope, Coordinate, LineSegment, LineString}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 import com.vividsolutions.jts.dissolver.LineDissolver
-import com.vividsolutions.jts.index.strtree.STRtree
+import com.vividsolutions.jts.index.strtree.{STRtree, SIRtree}
 import com.vividsolutions.jts.algorithm.Angle
 
 val ans = PolygonExtractor.extractZCTAs()
@@ -18,7 +18,7 @@ import GeometryUtils.IterablePolygon
 
 val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
-val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance)
+val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
 val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
 
 val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
@@ -51,32 +51,7 @@ tmp.grouped(2).map(_.toList).filter(_.length > 1).foreach {
       horizontalEdgeTree.insert(env, pair.head)
 }
 
-case class Corner(coordinate: Coordinate, isConvex: Boolean, direction: Int)
 
-object Corner {
-  def isConvexCorner(corner: List[Coordinate]): Boolean =
-    Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
-
-  def edgeDirection(vec: List[Coordinate]): Int = 
-    (Angle.angle(vec.head, vec.last) * 360 / Angle.PI_TIMES_2).toInt
-
-  def apply(coords: List[Coordinate]) =
-    new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
-}
-
-
-def getCorners(polygon: Polygon): Iterator[Corner] = {
-  val boundary: List[Coordinate] = polygon.toList.tail
-  val extended: List[Coordinate] = Stream
-    .continually(boundary)
-    .flatten
-    .take(boundary.length + 2)
-    .toList
-
-  extended.sliding(3, 1).map(Corner.apply)
-}
-
-getCorners(tmp).map(Corner.apply)
 
 
 
@@ -97,47 +72,6 @@ def getMaxOrdinate(polygon: Polygon): Double = {
     .max
 }
 
-def potentialTangents(c: Coordinate, sup: Double): List[LineString] = {
-  val poles = List(new Coordinate(c.x, sup), new Coordinate(c.x, -sup),
-                  new Coordinate(sup, c.y), new Coordinate(-sup, c.y))
-  poles map { p => geometryFactory.createLineString(Array(p, c)) }
-}
-
-
-def filterTangents(lines: List[LineString], boundary: Geometry): List[LineString] =
-  lines.filter(_.touches(boundary))
-
-
-def tangents2rectangle(lines: List[LineString]): Geometry = {
-  geometryFactory
-    .createLineString(lines.flatMap(_.getCoordinates).toArray)
-    .getEnvelope
-}
-
-
-def makeTangentRectangles(polygon: Polygon, tol: Double) = {
-  val boundary: Geometry = polygon.getBoundary
-  val simpler: Polygon = DouglasPeuckerSimplifier
-    .simplify(polygon, tol)
-    .asInstanceOf[Polygon]
-
-  val sup: Double = getMaxOrdinate(polygon)
-
-  simpler
-    .map(potentialTangents(_, sup))
-    .map(filterTangents(_, boundary))
-    .filter(_.length == 2)
-    .map(tangents2rectangle)
-}
-
-def orthogonalCover(polygon, tol: Double = 0.0001): Polygon = {
-  val rectangles: Iterable[Geometry] = makeTangentRectangles(polygon, tol)
-
-  polygon
-    .getEnvelope
-    .difference(CascadedPolygonUnion.union(rectangles.asJavaCollection))
-    .asInstanceOf[Polygon]
-}
 
 val boundary = polygon.getBoundary
 
@@ -145,85 +79,19 @@ val tol = scala.math.pow(2, -13)
 
 
 
-val ans = polygon.toList.map { c =>
-  val c_n = new Coordinate(c.x, MAX_ORDINATE)
-  val c_e = new Coordinate(MAX_ORDINATE, c.y)
-  val c_s = new Coordinate(c.x, -MAX_ORDINATE)
-  val c_w = new Coordinate(-MAX_ORDINATE, c.y)
-  val lines = for (p <- List(c_n, c_e, c_s, c_w))
-    yield geometryFactory.createLineString(Array(p, c))
-  lines.filter(_.touches(boundary))
-}
-
-
-val tmp = ans.filter(_.length == 2).map { lines =>
-  geometryFactory
-    .createLineString(lines.flatMap(_.getCoordinates).toArray)
-    .getEnvelope
-}
-
-val cover = (polygon
-  .getEnvelope
-  .difference(CascadedPolygonUnion.union(tmp.asJavaCollection))
-  .asInstanceOf[Polygon])
-
-
-GeometryUtils.plotly(cover, Some(polygon), "new method simplified")
 
 ans.map(_.map(_.intersection(polygon.getBoundary).getDimension))
 
-new Envelope(c_n, c), new Envelope(c_e, c), new Envelope(c_s, c), new Envelope(c_w, c)
-val a = tmp.sliding(2, 1).map(_.toList).filter(_.length > 1).map { x =>
-  Angle.angle(x(0), x(1))
-}.toList
-
-val c1 = tmp.toList(20)
-val c2 = new Coordinate(Double.NegativeInfinity, c1.y)
-val env = new Envelope(c2, c1)
 
 tree.query(env)
 
 
-// for (i <- 0 until 20)
-//   yield Angle.interiorAngle(y(i), y(i+1), y(i+2))
-// 
-// 
-// 
-// val z = Stream.continually(boundary).flatten.take(boundary.length + 2).toList.sliding(3, 1).map(_.).toList
-// 
-// val test1 = for (y <- z)
-//   yield Angle.angleBetweenOriented(y(0), y(1), y(2)) < 0
-// 
-// val test2 = for (y <- z)
-//   yield isConvex1(y)
-// 
-// def isConvex1(triplet: List[Coordinate]): Boolean = {
-//   val x1 = triplet.head.x == triplet.tail.head.x
-//   val x2 = triplet.head.y > triplet.tail.head.y
-//   val x3 = triplet.tail.head.x > triplet.last.x
-//   val x4 = triplet.tail.head.x < triplet.last.x
-//   val x5 = triplet.tail.head.y > triplet.last.y
-//   val x6 = triplet.head.x < triplet.tail.head.x
-// 
-//   if (x1) {
-//     if (x2) {
-//       if (x4) true else false
-//     } else {
-//       if (x3) true else false
-//     }
-//   } else {
-//     if (x6) {
-//       if (!x5) true else false
-//     } else {
-//       if (x5) true else false
-//     }
-//   }
-// }
+
 
 import org.scalameter._
 val tolerance = scala.math.pow(2, -11)
 val time = config(
-  Key.exec.benchRuns -> 20,
+  Key.exec.benchRuns -> 100,
   Key.verbose -> true
 ) withWarmer {
   new Warmer.Default
@@ -236,6 +104,147 @@ val time = config(
 println(s"Total time: $time")
 
 
-val poly1 = OrthogonalPolygonBuilder.build(polygon, 0, 3)
-val poly = OrthogonalPolygonBuilder.build(poly1, rotundity = 3)
-GeometryUtils.plotly(poly, Some(polygon), "another improved method")
+val poly1 = OrthogonalPolygonBuilder.build(polygon)
+val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
+GeometryUtils.plotly(poly, Some(polygon), "fine tune improved method")
+
+def getMaxOrdinate(polygon: Polygon): Double = {
+  1.0 + polygon
+    .getEnvelope.asInstanceOf[Polygon]
+    .toList
+    .flatMap(c => List(c.x, c.y))
+    .map(math.abs)
+    .max
+}
+val sup = getMaxOrdinate(poly)
+val corners = Whatever.getCorners(poly).filter(_.isConvex).toList
+
+val edge = corners.head.extend(sup).intersection(poly)
+val p = edge.getCoordinates()(1)
+
+val segment = poly.filter(_.x == p.x).toList
+
+val lines = edge.asInstanceOf[LineString] :: { 
+  for (l <- segment)
+    yield GeometryUtils
+      .geometryFactory
+      .createLineString(Array(p, l))
+      .asInstanceOf[LineString]
+} ::: { poly.sliding(2, 1).map { points =>
+  GeometryUtils
+    .geometryFactory
+    .createLineString(Array(points.head, points.last))
+    .asInstanceOf[LineString]
+  }.toList
+}
+//::: edge.reverse.asInstanceOf[LineString] :: Nil
+
+import com.vividsolutions.jts.operation.polygonize.Polygonizer
+
+val polygonizer = new Polygonizer(false)
+polygonizer.add(lines.asJavaCollection)
+polygonizer.add(lines.reverse.asJavaCollection)
+// for (geo <- lines.map(_.asInstanceOf[Geometry])) {
+  
+// }
+
+
+val newP = polygonizer.getPolygons().toList.head.asInstanceOf[Polygon]
+
+GeometryUtils.plotly(newP, Some(polygon), "polygonizer")
+
+
+val horizontalEdgeTree = new SIRtree()
+poly.tail.grouped(2).foreach { points =>
+  val edge = points.toList
+  horizontalEdgeTree.insert(edge.head.x, edge.last.x, edge.head.y)
+}
+
+
+def extend(z: Double, corner: Corner): LineString = {
+  val p0: Coordinate = corner.angle match {
+    case 0 => new Coordinate(z, corner.coord.y)
+    case 90 => new Coordinate(corner.coord.x, z)
+    case 180 => new Coordinate(z, corner.coord.y)
+    case -90 => new Coordinate(corner.coord.x, z)
+    case _ => new Coordinate()
+  }
+
+  GeometryUtils.geometryFactory.createLineString(Array(corner.coord, p0))
+}
+
+def extendCorner(corner: Corner, edgeTree: SIRtree): LineString = {
+  val candidates: Iterable[Double] = edgeTree
+    .query(corner.renameMe)
+    .toList.asInstanceOf[List[Double]]
+    .filter(corner.predicate(_))
+
+  val z: Double = if (corner.angle == 90 || corner.angle == 0) candidates.min else candidates.max
+  extend(z, corner)
+}
+
+val corners = Whatever.getCorners(poly).filter(_.isConvex).toList
+
+val extendedLines = (corners
+  .filter(x => x.angle == 90 || x.angle == -90)
+  .map { extendCorner(_, horizontalEdgeTree) } )
+
+val verticalEdgeTree = new SIRtree()
+((poly.init ++ extendedLines.map(_.getCoordinates).flatten)
+  .grouped(2)
+  .foreach { points =>
+    val edge = points.toList
+    verticalEdgeTree.insert(edge.head.y, edge.last.y, edge.head.x)
+  })
+
+val extendedLines2 = (corners
+  .filter(x => x.angle == 0 || x.angle == 180)
+  .map { extendCorner(_, verticalEdgeTree) } )
+
+
+import com.vividsolutions.jts.operation.polygonize.Polygonizer
+
+val lines = extendedLines ++ extendedLines2 ++ poly.sliding(2, 1).map { points =>
+  GeometryUtils
+    .geometryFactory
+    .createLineString(Array(points.head, points.last))
+    .asInstanceOf[LineString]
+  }.toList
+
+val polygonizer = new Polygonizer()
+polygonizer.add(lines.asJavaCollection)
+polygonizer.add(lines.flatMap(_.getCoordinates).map {
+  GeometryUtils
+    .geometryFactory
+    .createPoint(_) 
+}.asJavaCollection)
+
+def linePlotter(plt: CartesianPlot, line: LineString): CartesianPlot = {
+  val coords = line.getCoordinates.toArray
+  plt.withScatter(coords.map(_.x), coords.map(_.y),
+    ScatterOptions()
+      .mode(ScatterMode.Marker, ScatterMode.Line)
+      .marker(MarkerOptions().color(152, 0, 0, 0.8).lineColor(30, 0, 0))
+  )
+}
+
+def plotly(
+    polygon: Polygon,
+    innerLines: List[LineString],
+    plotName: String = "scatter-mode"): Unit = {
+  import co.theasi.plotly._
+
+  val xs0: Array[Double] = polygon.toArray.map(_.x)
+  val ys0: Array[Double] = polygon.toArray.map(_.y)
+
+  val p = Plot()
+    .withScatter(xs0, ys0,
+      ScatterOptions()
+        .mode(ScatterMode.Marker, ScatterMode.Line)
+        .name("Orthogonal Polygon"))
+
+  val plot = innerLines.foldLeft(p)(linePlotter)
+  draw(plot, plotName, writer.FileOptions(overwrite=true))
+}
+
+plotly(poly, extendedLines ++ extendedLines2, "partitions?")
