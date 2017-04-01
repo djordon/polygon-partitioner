@@ -19,7 +19,7 @@ import GeometryUtils.IterablePolygon
 val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
 val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
-val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
+// val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
 
 val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
 val simplePoly = geometryFactory.createPolygon(simplified.getCoordinates)
@@ -29,7 +29,7 @@ val tmp = OthogonalPolygonBuilder.reduceColinearity(orthPolygon)
 GeometryUtils.plotly(tmp, Some(simplePoly), "triangulation method")
 
 
-GeometryUtils.plotly(orthPolygon2, Some(polygon), "simplified 3")
+GeometryUtils.plotly(orthPolygon, Some(polygon), "simplified 4")
 
 
 import GeometryUtils.IterablePolygon
