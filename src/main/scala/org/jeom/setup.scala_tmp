@@ -388,20 +388,31 @@ val (upperLeft, upperRight, lowerRight, lowerLeft) = corners.foldLeft(init)(fold
 val ul = upperLeft.sortBy(p => (p.x, p.y)).toVector
 val lr = lowerRight.sortBy(p => (p.y, p.x)).toVector
 
+// import scala.math.Ordering.Implicits._
+
 object XOrdering extends Ordering[Coordinate] {
-    def compare(a: Coordinate, b: Coordinate) = (a.x, a.y) compare (b.x, b.y)
+    def compare(a: Coordinate, b: Coordinate) =
+      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
 }
 
 object YOrdering extends Ordering[Coordinate] {
-    def compare(a: Coordinate, b: Coordinate) = (a.y, a.x) compare (b.y, b.x)
+    def compare(a: Coordinate, b: Coordinate) =
+      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
 }
 
 
-import scala.collection.Searching.search
+import scala.collection.Searching.{search, Found, InsertionPoint}
 
 val ans = lowerLeft.map { p =>
-  val i1 = ul.search(p)(XOrdering).insertionPoint
-  val i2 = lr.search(p)(YOrdering).insertionPoint
+  val i1 = ul.search(p)(XOrdering) match { 
+    case Found(i) => i + 1
+    case InsertionPoint(i) => i
+  }
+  val i2 = lr.search(p)(YOrdering) match { 
+    case Found(i) => i + 1
+    case InsertionPoint(i) => i
+  }
+  
   (ul(i1), lr(i2))
 }
 
