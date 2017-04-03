@@ -34,7 +34,7 @@ object Vec {
 }
 
 
-object OrthogonalPolygonSimplifier {
+object PolygonSimplifier {
   import GeometryUtils.IterablePolygon
   val geometryFactory = new GeometryFactory()
 
@@ -62,11 +62,17 @@ object OrthogonalPolygonSimplifier {
       .asInstanceOf[Polygon]
   }
 
-  def removeColinearity: Polygon => Polygon = 
-    polygon2vecs _ andThen filterVecs(Vec.vecColinearFolder) _ andThen vecs2polygon _
+  def removeColinearity: Polygon => Polygon = {
+    polygon2vecs _ andThen 
+    filterVecs(Vec.vecColinearFolder) _ andThen
+    vecs2polygon _
+  }
 
-  def removeBasisColinearity: Polygon => Polygon = 
-    polygon2vecs _ andThen filterVecs(Vec.vecBasisFolder) _ andThen vecs2polygon _
+  def removeBasisColinearity: Polygon => Polygon = {
+    polygon2vecs _ andThen 
+    filterVecs(Vec.vecBasisFolder) _ andThen 
+    vecs2polygon _
+  }
 }
 
 
@@ -99,7 +105,7 @@ object OrthogonalPolygonBuilder {
         .asInstanceOf[Polygon]
     }
 
-    val simpler: Polygon = OrthogonalPolygonSimplifier.removeBasisColinearity(poly)
+    val simpler: Polygon = PolygonSimplifier.removeBasisColinearity(poly)
 
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)
@@ -114,7 +120,7 @@ object OrthogonalPolygonBuilder {
       .asInstanceOf[Polygon]
       .getExteriorRing
 
-    OrthogonalPolygonSimplifier removeColinearity
+    PolygonSimplifier removeColinearity
       geometryFactory.createPolygon(newBoundary.getCoordinates)
   }
 }

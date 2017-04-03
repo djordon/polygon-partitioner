@@ -19,6 +19,7 @@ import GeometryUtils.IterablePolygon
 val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
 val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
+val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
 // val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
 
 val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
@@ -248,3 +249,201 @@ def plotly(
 }
 
 plotly(poly, extendedLines ++ extendedLines2, "partitions?")
+
+
+
+
+
+
+
+// import com.vividsolutions.jts.index.quadtree.Quadtree
+// import com.vividsolutions.jts.geomgraph.{Edge, EdgeEnd, GeometryGraph, PlanarGraph}
+// import com.vividsolutions.jts.edgegraph.{EdgeGraphBuilder, HalfEdge}
+// import com.vividsolutions.jts.dissolve.LineDissolver
+// 
+// 
+// val edges = lines.map(x => new EdgeEnd(new Edge(x.getCoordinates), x.getCoordinateN(0), x.getCoordinateN(1)))
+// val graph = new PlanarGraph()
+// graph.addEdges(edges)
+// 
+// 
+// val edgeGraph = EdgeGraphBuilder.build(lines)
+// val vertices = edgeGraph.getVertexEdges.toList.asInstanceOf[List[HalfEdge]]
+// 
+// 
+// val extra1: List[List[Double]] = List(List(0,0), List(0, 1), List(1, 1), List(1, 0), List(0, 0))
+// val extra2: List[List[Double]] = List(List(0.5, 1), List(0.5, 0))
+// val extra3: List[List[Double]] = List(List(0, 0.5), List(0.5, 0.5))
+// 
+// def makeCoordinate(po: List[Double]): Coordinate = new Coordinate(po.head, po.last)
+// 
+// def makeListLineString(coords: List[List[Double]]): List[LineString] = {
+//   coords
+//     .sliding(2, 1)
+//     .map { points =>
+//       GeometryUtils
+//         .geometryFactory
+//         .createLineString(Array(makeCoordinate(points.head), makeCoordinate(points.last)))
+//         .asInstanceOf[LineString]
+//     }.toList
+// }
+// 
+// val l1 = makeListLineString(extra1)
+// val l2 = makeListLineString(extra2)
+// val l3 = makeListLineString(extra3)
+// val ls = l1 ++ l2 ++ l3
+// 
+// val edgeGraph = EdgeGraphBuilder.build(l1 ++ l2 ++ l3)
+// val vertices = edgeGraph.getVertexEdges.toList.asInstanceOf[List[HalfEdge]]
+// 
+// 
+// val dissolver = new LineDissolver()
+// dissolver.add(ls)
+// dissolver.getResults()
+
+
+
+
+val horizontalEdgeTree = new SIRtree()
+poly.tail.grouped(2).foreach { points =>
+  val edge = points.toList
+  horizontalEdgeTree.insert(edge.head.x, edge.last.x, edge.head.y)
+}
+
+
+def extend(z: Double, corner: Corner): Coordinate = corner.angle match {
+    case 0 => new Coordinate(z, corner.coord.y)
+    case 90 => new Coordinate(corner.coord.x, z)
+    case 180 => new Coordinate(z, corner.coord.y)
+    case -90 => new Coordinate(corner.coord.x, z)
+    case _ => new Coordinate()
+}
+
+
+def extendCorner(corner: Corner, edgeTree: SIRtree): Coordinate = {
+  val candidates: Iterable[Double] = edgeTree
+    .query(corner.renameMe)
+    .toList.asInstanceOf[List[Double]]
+    .filter(corner.predicate(_))
+
+  val z: Double = if (corner.angle == 90 || corner.angle == 0) candidates.min else candidates.max
+  extend(z, corner)
+}
+
+val corners = Whatever.getCorners(poly).toList
+
+val extendedLines = (corners
+  .filter(_.isConvex)
+  .filter(x => x.angle == 90 || x.angle == -90)
+  .map { corner => (corner.coord, extendCorner(corner, horizontalEdgeTree)) } )
+
+val verticalEdgeTree = new SIRtree()
+((poly.init ++ extendedLines.map(pair => List(pair._1, pair._2)).flatten)
+  .grouped(2)
+  .foreach { points =>
+    val edge = points.toList
+    verticalEdgeTree.insert(edge.head.y, edge.last.y, edge.head.x)
+  })
+
+val extendedLines2 = (corners
+  .filter(_.isConvex)
+  .filter(x => x.angle == 0 || x.angle == 180)
+  .map { corner => (corner.coord, extendCorner(corner, verticalEdgeTree)) } )
+
+val id = (extendedLines ++ extendedLines2).toMap
+
+def folder(
+    stacks: Tuple4[List[Coordinate], List[Coordinate], List[Coordinate], List[Coordinate]],
+    corner: Corner): 
+      Tuple4[List[Coordinate], List[Coordinate], List[Coordinate], List[Coordinate]] = {
+  corner match {
+    case Corner(source, true, 0, _) =>
+      val dest = id(source)
+      (stacks._1, dest :: stacks._2, dest :: stacks._3, source :: stacks._4)
+    case Corner(source, true, 90, _) =>
+      val dest = id(source)
+      (dest :: stacks._1, dest :: stacks._2, source :: stacks._3, stacks._4)
+    case Corner(source, true, 180, _) =>
+      val dest = id(source)
+      (dest :: stacks._1, source :: stacks._2, stacks._3, dest :: stacks._4)
+    case Corner(source, true, -90, _) =>
+      val dest = id(source)
+      (source :: stacks._1, stacks._2, dest :: stacks._3, dest :: stacks._4)
+    case Corner(source, false, _, 0) =>
+      (source :: stacks._1, stacks._2, stacks._3, stacks._4)
+    case Corner(source, false, _, 90) =>
+      (stacks._1, stacks._2, stacks._3, source :: stacks._4)
+    case Corner(source, false, _, 180) =>
+      (stacks._1, stacks._2, source :: stacks._3, stacks._4)
+    case Corner(source, false, _, -90) =>
+      (stacks._1, source :: stacks._2, stacks._3, stacks._4)
+    case _ => stacks
+  }
+}
+
+val init: Tuple4[List[Coordinate], List[Coordinate], List[Coordinate], List[Coordinate]] = {
+  (Nil, Nil, Nil, Nil)
+} 
+val (upperLeft, upperRight, lowerRight, lowerLeft) = corners.foldLeft(init)(folder)
+val ul = upperLeft.sortBy(p => (p.x, p.y)).toVector
+val lr = lowerRight.sortBy(p => (p.y, p.x)).toVector
+
+object XOrdering extends Ordering[Coordinate] {
+    def compare(a: Coordinate, b: Coordinate) = (a.x, a.y) compare (b.x, b.y)
+}
+
+object YOrdering extends Ordering[Coordinate] {
+    def compare(a: Coordinate, b: Coordinate) = (a.y, a.x) compare (b.y, b.x)
+}
+
+
+import scala.collection.Searching.search
+
+val ans = lowerLeft.map { p =>
+  val i1 = ul.search(p)(XOrdering).insertionPoint
+  val i2 = lr.search(p)(YOrdering).insertionPoint
+  (ul(i1), lr(i2))
+}
+
+import co.theasi.plotly._
+
+def linePlotter(plt: CartesianPlot, line: Tuple2[Coordinate, Coordinate]): CartesianPlot = {
+  val coords = Array(line._1, line._2)
+  plt.withScatter(coords.map(_.x), coords.map(_.y),
+    ScatterOptions()
+      .mode(ScatterMode.Marker, ScatterMode.Line)
+      .marker(MarkerOptions().color(152, 0, 0, 0.8).lineColor(30, 0, 0))
+  )
+}
+
+def diagPlotter(plt: CartesianPlot, line: Tuple2[Coordinate, Coordinate]): CartesianPlot = {
+  val coords = Array(line._1, line._2)
+  plt.withScatter(coords.map(_.x), coords.map(_.y),
+    ScatterOptions()
+      .mode(ScatterMode.Marker, ScatterMode.Line)
+      .marker(MarkerOptions().color(0, 152, 0, 0.8).lineColor(0, 30, 0))
+  )
+}
+
+def plotly(
+    polygon: Polygon,
+    innerLines: List[Tuple2[Coordinate, Coordinate]],
+    diagLines: List[Tuple2[Coordinate, Coordinate]],
+    plotName: String = "scatter-mode"): Unit = {
+  import co.theasi.plotly._
+
+  val xs0: Array[Double] = polygon.toArray.map(_.x)
+  val ys0: Array[Double] = polygon.toArray.map(_.y)
+
+  val p1 = Plot()
+    .withScatter(xs0, ys0,
+      ScatterOptions()
+        .mode(ScatterMode.Marker, ScatterMode.Line)
+        .name("Orthogonal Polygon"))
+
+  val p2 = innerLines.foldLeft(p1)(linePlotter)
+  val plot = diagLines.foldLeft(p2)(diagPlotter)
+  draw(plot, plotName, writer.FileOptions(overwrite=true))
+}
+
+plotly(poly, extendedLines ++ extendedLines2, ans, "partitions!")

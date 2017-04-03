@@ -9,7 +9,8 @@ import com.vividsolutions.jts.index.strtree.STRtree
 import GeometryUtils.IterablePolygon
 
 
-case class Corner(coord: Coordinate, isConvex: Boolean, angle: Int) {
+case class Corner(coord: Coordinate, isConvex: Boolean, headAngle: Int, tailAngle: Int) {
+
   def extend(sup: Double): LineString = {
     val p0: Coordinate = angle match {
       case 0 => new Coordinate(sup, coord.y)
@@ -21,6 +22,8 @@ case class Corner(coord: Coordinate, isConvex: Boolean, angle: Int) {
   
     GeometryUtils.geometryFactory.createLineString(Array(coord, p0))
   }
+
+  val angle = headAngle
 
   def predicate(xy: Double): Boolean = angle match {
       case 0 => xy > coord.x
@@ -34,8 +37,12 @@ case class Corner(coord: Coordinate, isConvex: Boolean, angle: Int) {
 
 
 object Corner {
-  def apply(coords: List[Coordinate]) =
-    new Corner(coords(1), isConvexCorner(coords), edgeDirection(coords.take(2)))
+  def apply(coords: List[Coordinate]) = new Corner(
+    coord = coords(1), 
+    isConvex = isConvexCorner(coords), 
+    headAngle = edgeDirection(coords.init),
+    tailAngle = edgeDirection(coords.tail)
+  )
 
   def edgeDirection(vec: List[Coordinate]): Int = 
     Angle.toDegrees(Angle.angle(vec.head, vec.last)).toInt

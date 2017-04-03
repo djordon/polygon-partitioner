@@ -18,3 +18,11 @@
 8. Form the rectangle from these extended lines
 9. Find the union of all rectangles formed this way. Call this polygon p*
 10. Find the difference between the OrthogonalPolygon and p*
+
+
+
+Getting the upper left-hand points of each rectangle
+1. If you are an original boundary point and the edge that points to the next coordinate along the boundary goes to the right, then this coordinate is an upper left-hand coordinate of the rectangle
+2. For the "new" coordinates created from extending convex boundary points look at the following:
+  - If you are a line that was extended upward, then the top point is an upper left-hand point
+  - If you are a line that was extended leftward, the the point on the left is an upper left-hand point.
