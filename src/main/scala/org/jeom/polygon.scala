@@ -45,8 +45,8 @@ object PolygonSimplifier {
       .toList
   }
 
-  private def filterVecs(folder: (List[Vec], Vec) => List[Vec])
-      (vecs: List[Vec]): List[Vec] = {
+  private def filterVecs(folder: (List[Vec], Vec) => List[Vec])(vecs: List[Vec])
+    : List[Vec] = {
 
     val reduced: List[Vec] = vecs
       .tail
