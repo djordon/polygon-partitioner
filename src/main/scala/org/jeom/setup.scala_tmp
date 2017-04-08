@@ -2,13 +2,10 @@ import org.jeom._
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
-import com.vividsolutions.jts.triangulate.DelaunayTriangulationBuilder
-import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Envelope, Coordinate, LineSegment, LineString}
-import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
-import com.vividsolutions.jts.dissolver.LineDissolver
-import com.vividsolutions.jts.index.strtree.{STRtree, SIRtree}
-import com.vividsolutions.jts.algorithm.Angle
+import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Coordinate, LineString}
+import com.vividsolutions.jts.index.strtree.SIRtree
+import com.vividsolutions.jts.operation.polygonize.Polygonizer
+
 
 val ans = PolygonExtractor.extractZCTAs()
 
@@ -20,72 +17,6 @@ val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
 val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
 val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
-// val orthPolygon2 = OrthogonalPolygonBuilder2.build(orthPolygon)
-
-val simplified = DouglasPeuckerSimplifier.simplify(polygon, scala.math.pow(2, -12))
-val simplePoly = geometryFactory.createPolygon(simplified.getCoordinates)
-
-val tmp = OthogonalPolygonBuilder.reduceColinearity(orthPolygon)
-
-GeometryUtils.plotly(tmp, Some(simplePoly), "triangulation method")
-
-
-GeometryUtils.plotly(orthPolygon, Some(polygon), "simplified 4")
-
-
-import GeometryUtils.IterablePolygon
-
-val verticalEdgeTree = new STRtree()
-val horizontalEdgeTree = new STRtree()
-
-implicit def coords2envelope(coords: List[Coordinate]): Envelope =
-  new Envelope(coords.head, coords.last)
-
-
-tmp.grouped(2).map(_.toList).filter(_.length > 1).foreach { 
-  pair =>
-    val env = new Envelope(pair)
-
-    if (pair.head.x == pair.last.x)
-      verticalEdgeTree.insert(env, pair.head)
-    else 
-      horizontalEdgeTree.insert(env, pair.head)
-}
-
-
-
-
-
-
-val MAX_ORDINATE: Double = (1 + polygon
-    .getEnvelope.asInstanceOf[Polygon]
-    .toList
-    .flatMap(c => List(c.x, c.y))
-    .map(math.abs)
-    .max)
-
-def getMaxOrdinate(polygon: Polygon): Double = {
-  1.0 + polygon
-    .getEnvelope.asInstanceOf[Polygon]
-    .toList
-    .flatMap(c => List(c.x, c.y))
-    .map(math.abs)
-    .max
-}
-
-
-val boundary = polygon.getBoundary
-
-val tol = scala.math.pow(2, -13)
-
-
-
-
-ans.map(_.map(_.intersection(polygon.getBoundary).getDimension))
-
-
-tree.query(env)
-
 
 
 
@@ -105,317 +36,81 @@ val time = config(
 println(s"Total time: $time")
 
 
-val poly1 = OrthogonalPolygonBuilder.build(polygon)
-val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
-GeometryUtils.plotly(poly, Some(polygon), "fine tune improved method")
+def buildIntervalTree(corners: List[CornerPoint], isVertical: Boolean): SIRtree = {
 
-def getMaxOrdinate(polygon: Polygon): Double = {
-  1.0 + polygon
-    .getEnvelope.asInstanceOf[Polygon]
-    .toList
-    .flatMap(c => List(c.x, c.y))
-    .map(math.abs)
-    .max
+  val tree: SIRtree = new SIRtree()
+  val edges: Iterator[List[CornerPoint]] = corners.grouped(2)
+
+  if (isVertical) 
+    edges foreach { e => tree.insert(e.head.y, e.last.y, e) }
+  else
+    edges foreach { e => tree.insert(e.head.x, e.last.x, e) }
+
+  tree
 }
-val sup = getMaxOrdinate(poly)
-val corners = Whatever.getCorners(poly).filter(_.isConvex).toList
 
-val edge = corners.head.extend(sup).intersection(poly)
-val p = edge.getCoordinates()(1)
+def extendCorner(corner: Corner, edgeTree: SIRtree): List[CornerPoint] = {
+  tree
+    .query(corner.extensionCoord)
+    .toList.asInstanceOf[List[List[CornerPoint]]]
+    .filter(c => corner.extensionOrder(c.head.point.y))
+    .minBy(_.head.point.y)  
+}
 
-val segment = poly.filter(_.x == p.x).toList
+// val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
+// GeometryUtils.plotly(poly, Some(polygon), "fine tune improved method")
 
-val lines = edge.asInstanceOf[LineString] :: { 
-  for (l <- segment)
-    yield GeometryUtils
+
+val corners = OrthogonalPolygonPartitioner.extractCorners(orthPolygon)
+val startsVertically: Boolean = corners.head.angle.abs != 90
+
+val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+val tree = buildIntervalTree(hc, false)
+
+val corner = corners.filter(c => c.isConvex && c.extendsVertically && c.point.x == -66.755807).head
+val edge = extendCorner(corner, tree)
+
+val line1 = geometryFactory.createLineString(
+  Array(new Coordinate(edge.head.point.x, edge.head.point.y),
+        new Coordinate(corner.point.x, edge.head.point.y)))
+val line2 = geometryFactory.createLineString(
+  Array(new Coordinate(corner.point.x, edge.head.point.y),
+        new Coordinate(edge.last.point.x, edge.last.point.y)))
+val line3 = geometryFactory.createLineString(
+  Array(new Coordinate(corner.point.x, corner.point.y),
+        new Coordinate(corner.point.x, edge.head.point.y)))
+
+val badLine = geometryFactory.createLineString(
+  Array(new Coordinate(edge.head.point.x, edge.head.point.y),
+        new Coordinate(edge.last.point.x, edge.last.point.y)))
+
+
+val lines = line1 :: line2 :: line3 :: { 
+  orthPolygon.sliding(2, 1).map { points =>
+    GeometryUtils
       .geometryFactory
-      .createLineString(Array(p, l))
+      .createLineString(Array(points.head, points.last))
       .asInstanceOf[LineString]
-} ::: { poly.sliding(2, 1).map { points =>
-  GeometryUtils
-    .geometryFactory
-    .createLineString(Array(points.head, points.last))
-    .asInstanceOf[LineString]
-  }.toList
+  }.filter(!_.equals(badLine)).toList
 }
-//::: edge.reverse.asInstanceOf[LineString] :: Nil
 
-import com.vividsolutions.jts.operation.polygonize.Polygonizer
 
 val polygonizer = new Polygonizer(false)
 polygonizer.add(lines.asJavaCollection)
 polygonizer.add(lines.reverse.asJavaCollection)
 // for (geo <- lines.map(_.asInstanceOf[Geometry])) {
   
-// }
+val ans = polygonizer.getPolygons.toList.asInstanceOf[List[Polygon]]
+
 
 
 val newP = polygonizer.getPolygons().toList.head.asInstanceOf[Polygon]
 
-GeometryUtils.plotly(newP, Some(polygon), "polygonizer")
-
-
-val horizontalEdgeTree = new SIRtree()
-poly.tail.grouped(2).foreach { points =>
-  val edge = points.toList
-  horizontalEdgeTree.insert(edge.head.x, edge.last.x, edge.head.y)
-}
-
-
-def extend(z: Double, corner: Corner): LineString = {
-  val p0: Coordinate = corner.angle match {
-    case 0 => new Coordinate(z, corner.coord.y)
-    case 90 => new Coordinate(corner.coord.x, z)
-    case 180 => new Coordinate(z, corner.coord.y)
-    case -90 => new Coordinate(corner.coord.x, z)
-    case _ => new Coordinate()
-  }
-
-  GeometryUtils.geometryFactory.createLineString(Array(corner.coord, p0))
-}
-
-def extendCorner(corner: Corner, edgeTree: SIRtree): LineString = {
-  val candidates: Iterable[Double] = edgeTree
-    .query(corner.renameMe)
-    .toList.asInstanceOf[List[Double]]
-    .filter(corner.predicate(_))
-
-  val z: Double = if (corner.angle == 90 || corner.angle == 0) candidates.min else candidates.max
-  extend(z, corner)
-}
-
-val corners = Whatever.getCorners(poly).filter(_.isConvex).toList
-
-val extendedLines = (corners
-  .filter(x => x.angle == 90 || x.angle == -90)
-  .map { extendCorner(_, horizontalEdgeTree) } )
-
-val verticalEdgeTree = new SIRtree()
-((poly.init ++ extendedLines.map(_.getCoordinates).flatten)
-  .grouped(2)
-  .foreach { points =>
-    val edge = points.toList
-    verticalEdgeTree.insert(edge.head.y, edge.last.y, edge.head.x)
-  })
-
-val extendedLines2 = (corners
-  .filter(x => x.angle == 0 || x.angle == 180)
-  .map { extendCorner(_, verticalEdgeTree) } )
-
-
-import com.vividsolutions.jts.operation.polygonize.Polygonizer
-
-val lines = extendedLines ++ extendedLines2 ++ poly.sliding(2, 1).map { points =>
-  GeometryUtils
-    .geometryFactory
-    .createLineString(Array(points.head, points.last))
-    .asInstanceOf[LineString]
-  }.toList
-
-val polygonizer = new Polygonizer()
-polygonizer.add(lines.asJavaCollection)
-polygonizer.add(lines.flatMap(_.getCoordinates).map {
-  GeometryUtils
-    .geometryFactory
-    .createPoint(_) 
-}.asJavaCollection)
-
-def linePlotter(plt: CartesianPlot, line: LineString): CartesianPlot = {
-  val coords = line.getCoordinates.toArray
-  plt.withScatter(coords.map(_.x), coords.map(_.y),
-    ScatterOptions()
-      .mode(ScatterMode.Marker, ScatterMode.Line)
-      .marker(MarkerOptions().color(152, 0, 0, 0.8).lineColor(30, 0, 0))
-  )
-}
-
-def plotly(
-    polygon: Polygon,
-    innerLines: List[LineString],
-    plotName: String = "scatter-mode"): Unit = {
-  import co.theasi.plotly._
-
-  val xs0: Array[Double] = polygon.toArray.map(_.x)
-  val ys0: Array[Double] = polygon.toArray.map(_.y)
-
-  val p = Plot()
-    .withScatter(xs0, ys0,
-      ScatterOptions()
-        .mode(ScatterMode.Marker, ScatterMode.Line)
-        .name("Orthogonal Polygon"))
-
-  val plot = innerLines.foldLeft(p)(linePlotter)
-  draw(plot, plotName, writer.FileOptions(overwrite=true))
-}
-
-plotly(poly, extendedLines ++ extendedLines2, "partitions?")
+GeometryUtils.plotly(ans.head, Some(ans.last), "polygonizer split")
 
 
 
-
-
-
-
-// import com.vividsolutions.jts.index.quadtree.Quadtree
-// import com.vividsolutions.jts.geomgraph.{Edge, EdgeEnd, GeometryGraph, PlanarGraph}
-// import com.vividsolutions.jts.edgegraph.{EdgeGraphBuilder, HalfEdge}
-// import com.vividsolutions.jts.dissolve.LineDissolver
-// 
-// 
-// val edges = lines.map(x => new EdgeEnd(new Edge(x.getCoordinates), x.getCoordinateN(0), x.getCoordinateN(1)))
-// val graph = new PlanarGraph()
-// graph.addEdges(edges)
-// 
-// 
-// val edgeGraph = EdgeGraphBuilder.build(lines)
-// val vertices = edgeGraph.getVertexEdges.toList.asInstanceOf[List[HalfEdge]]
-// 
-// 
-// val extra1: List[List[Double]] = List(List(0,0), List(0, 1), List(1, 1), List(1, 0), List(0, 0))
-// val extra2: List[List[Double]] = List(List(0.5, 1), List(0.5, 0))
-// val extra3: List[List[Double]] = List(List(0, 0.5), List(0.5, 0.5))
-// 
-// def makeCoordinate(po: List[Double]): Coordinate = new Coordinate(po.head, po.last)
-// 
-// def makeListLineString(coords: List[List[Double]]): List[LineString] = {
-//   coords
-//     .sliding(2, 1)
-//     .map { points =>
-//       GeometryUtils
-//         .geometryFactory
-//         .createLineString(Array(makeCoordinate(points.head), makeCoordinate(points.last)))
-//         .asInstanceOf[LineString]
-//     }.toList
-// }
-// 
-// val l1 = makeListLineString(extra1)
-// val l2 = makeListLineString(extra2)
-// val l3 = makeListLineString(extra3)
-// val ls = l1 ++ l2 ++ l3
-// 
-// val edgeGraph = EdgeGraphBuilder.build(l1 ++ l2 ++ l3)
-// val vertices = edgeGraph.getVertexEdges.toList.asInstanceOf[List[HalfEdge]]
-// 
-// 
-// val dissolver = new LineDissolver()
-// dissolver.add(ls)
-// dissolver.getResults()
-
-
-
-
-val horizontalEdgeTree = new SIRtree()
-poly.tail.grouped(2).foreach { points =>
-  val edge = points.toList
-  horizontalEdgeTree.insert(edge.head.x, edge.last.x, edge.head.y)
-}
-
-
-def extend(z: Double, corner: Corner): Coordinate = corner.angle match {
-    case 0 => new Coordinate(z, corner.coord.y)
-    case 90 => new Coordinate(corner.coord.x, z)
-    case 180 => new Coordinate(z, corner.coord.y)
-    case -90 => new Coordinate(corner.coord.x, z)
-    case _ => new Coordinate()
-}
-
-
-def extendCorner(corner: Corner, edgeTree: SIRtree): Coordinate = {
-  val candidates: Iterable[Double] = edgeTree
-    .query(corner.renameMe)
-    .toList.asInstanceOf[List[Double]]
-    .filter(corner.predicate(_))
-
-  val z: Double = if (corner.angle == 90 || corner.angle == 0) candidates.min else candidates.max
-  extend(z, corner)
-}
-
-val corners = Whatever.getCorners(poly).toList
-
-val extendedLines = (corners
-  .filter(_.isConvex)
-  .filter(x => x.angle == 90 || x.angle == -90)
-  .map { corner => (corner.coord, extendCorner(corner, horizontalEdgeTree)) } )
-
-val verticalEdgeTree = new SIRtree()
-((poly.init ++ extendedLines.map(pair => List(pair._1, pair._2)).flatten)
-  .grouped(2)
-  .foreach { points =>
-    val edge = points.toList
-    verticalEdgeTree.insert(edge.head.y, edge.last.y, edge.head.x)
-  })
-
-val extendedLines2 = (corners
-  .filter(_.isConvex)
-  .filter(x => x.angle == 0 || x.angle == 180)
-  .map { corner => (corner.coord, extendCorner(corner, verticalEdgeTree)) } )
-
-val id = (extendedLines ++ extendedLines2).toMap
-
-def folder(
-    stacks: Tuple4[List[Coordinate], List[Coordinate], List[Coordinate]],
-    corner: Corner): 
-      Tuple4[List[Coordinate], List[Coordinate], List[Coordinate]] = {
-  corner match {
-    case Corner(source, true, 0) =>
-      (stacks._1, source :: stacks._2, id(source) :: stacks._3)
-    case Corner(source, true, 90) =>
-      (id(source) :: stacks._1, stacks._2, source :: stacks._3)
-    case Corner(source, true, 180) =>
-      val dest = id(source)
-      (dest :: stacks._1, dest :: stacks._2, stacks._3)
-    case Corner(source, true, -90) =>
-      val dest = id(source)
-      (source :: stacks._1, dest :: stacks._2, dest :: stacks._3)
-    case Corner(source, false, 90) =>
-      (source :: stacks._1, stacks._2, stacks._3)
-    case Corner(source, false, 180) =>
-      (stacks._1, source :: stacks._2, stacks._3)
-    case Corner(source, false, -90) =>
-      (stacks._1, stacks._2, source :: stacks._3)
-    case _ => stacks
-  }
-}
-
-val init: Tuple4[List[Coordinate], List[Coordinate], List[Coordinate]] = {
-  (Nil, Nil, Nil)
-} 
-val (upperLeft, lowerLeft, lowerRight) = corners.foldLeft(init)(folder)
-val ul = upperLeft.sortBy(p => (p.x, p.y)).toVector
-val lr = lowerRight.sortBy(p => (p.y, p.x)).toVector
-
-// import scala.math.Ordering.Implicits._
-
-object XOrdering extends Ordering[Coordinate] {
-    def compare(a: Coordinate, b: Coordinate) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
-}
-
-object YOrdering extends Ordering[Coordinate] {
-    def compare(a: Coordinate, b: Coordinate) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
-}
-
-
-import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
-
-def extractIndex(sr: SearchResult): Int = sr match { 
-  case Found(i) => i + 1
-  case InsertionPoint(i) => i
-}
-
-val ans = lowerLeft.map { p =>
-  val i1 = extractIndex ul.search(p)(XOrdering)
-  val i2 = extractIndex lr.search(p)(YOrdering)
-
-  (ul(i1), lr(i2))
-}
-
-val corners = OrthogonalPolygonPartitioner.extractCorners(orthPolygon)
-val lines = (OrthogonalPolygonPartitioner
-  .makeRectangleCorners(corners)
-  .filter(_.isConvex)
-  .asInstanceOf[List[ExtendedCorner]])
 val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)
 
 import co.theasi.plotly._
