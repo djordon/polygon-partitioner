@@ -5,7 +5,6 @@ import scala.collection.JavaConversions._
 
 import com.vividsolutions.jts.algorithm.Angle
 import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.index.strtree.SIRtree
 
 
 case class Point(x: Double, y: Double) {
@@ -61,18 +60,7 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 }
 
 
-case class Corner(point: Point, isConvex: Boolean, angle: Int) extends CornerPoint {
-  def extend(treeSet: TreeSet[Double]): ExtendedCorner = {
-    val destination: Point = angle match {
-      case 0 => Point(treeSet.from(x).firstKey, y)
-      case 180 => Point(treeSet.to(x).lastKey, y)
-      case -90 => Point(x, treeSet.to(y).lastKey)
-      case 90 => Point(x, treeSet.from(y).firstKey)
-    }
-
-    ExtendedCorner(point, destination, angle)
-  }
-}
+case class Corner(point: Point, isConvex: Boolean, angle: Int) extends CornerPoint
 
 
 object Corner {

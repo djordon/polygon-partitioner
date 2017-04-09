@@ -5,10 +5,54 @@ import scala.collection.JavaConversions._
 import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
 import com.vividsolutions.jts.geom.{Polygon, Coordinate}
-import com.vividsolutions.jts.index.strtree.SIRtree
 
 import GeometryUtils.IterablePolygon
 
+
+object OrthononalPolygonCornerExtender {
+  lazy val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
+
+  private def extendCorner(cn: Corner, treeSet: TreeSet[Double]): ExtendedCorner = {
+    val destination: Point = cn.angle match {
+      case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
+      case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
+      case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
+      case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
+    }
+
+    ExtendedCorner(cn.point, destination, cn.angle)
+  }
+
+  private def sweepFolder(extendVertically: Boolean)(
+      tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]],
+      corner: Corner
+    ): Tuple2[TreeSet[Double], List[ExtendedCorner]] = {
+
+    val (tm, ecs) = tuple
+    val z: Double = if (extendVertically) corner.y else corner.x
+    val doExtend: Boolean = extendVertically == (corner.angle.abs == 90)
+
+    if (tm.contains(z))
+      (corner, doExtend) match {
+        case (Corner(_, true, _), true) => (tm - z, extendCorner(corner, tm - z) :: ecs)
+        case _ => (tm - z, ecs)
+      }
+    else
+      (corner, doExtend) match {
+        case (Corner(_, true, _), true) => (tm + z, extendCorner(corner, tm) :: ecs)
+        case _ => (tm + z, ecs)
+      }
+  }
+
+  def extendCorners(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
+    val ordering = if (extendVertically) CornerOrderingX else CornerOrderingY
+
+    corners
+      .sorted(ordering)
+      .foldLeft(init)(sweepFolder(extendVertically))
+      ._2
+  }
+}
 
 object OrthogonalPolygonPartitioner {
 
@@ -26,25 +70,19 @@ object OrthogonalPolygonPartitioner {
       .toList
   }
 
-  private def sweepFolder(sweepVertically: Boolean)(
-      tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]],
-      corner: Corner
-    ): Tuple2[TreeSet[Double], List[ExtendedCorner]] = {
+  def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
+    val startsVertically: Boolean = corners.head.angle.abs != 90
 
-    val (tm, ecs) = tuple
-    val z: Double = if (sweepVertically) corner.x else corner.y
-    val doExtend: Boolean = sweepVertically == (corner.angle.abs != 90)
+    val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+    val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-    if (tm.contains(z))
-      (corner, doExtend) match {
-        case (Corner(_, true, _), true) => (tm - z, corner.extend(tm - z) :: ecs)
-        case _ => (tm - z, ecs)
-      }
-    else
-      (corner, doExtend) match {
-        case (Corner(_, true, _), true) => (tm + z, corner.extend(tm) :: ecs)
-        case _ => (tm + z, ecs)
-      }
+    val vEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
+      .extendCorners(hc, extendVertically = true)
+
+    val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
+      .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically = false)
+
+    vEdges ++ hEdges ++ corners.tail.filterNot(_.isConvex)
   }
 
   private def cornerFolder(
@@ -68,26 +106,6 @@ object OrthogonalPolygonPartitioner {
         (stacks._1, stacks._2, source :: stacks._3)
       case _ => stacks
     }
-  }
-
-  def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
-    val startsVertically: Boolean = corners.head.angle.abs != 90
-
-    val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-    val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-    val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
-    val vEdges: List[ExtendedCorner] = hc
-      .sorted(CornerOrderingX)
-      .foldLeft(init)(sweepFolder(false))
-      ._2
-
-    val hEdges: List[ExtendedCorner] = (vEdges.flatMap(_.toListCorner) ++ vc)
-      .sorted(CornerOrderingY)
-      .foldLeft(init)(sweepFolder(true))
-      ._2
-
-    vEdges ++ hEdges ++ corners.tail.filterNot(_.isConvex)
   }
 
   private def extractIndex(sr: SearchResult): Int = sr match { 
