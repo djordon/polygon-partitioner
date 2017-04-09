@@ -1,5 +1,6 @@
 package org.jeom
 
+import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._
 import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
@@ -25,21 +26,28 @@ object OrthogonalPolygonPartitioner {
       .toList
   }
 
-  private def buildIntervalTree(corners: List[CornerPoint], isVertical: Boolean)
-    : SIRtree = {
+  private def sweepFolder(sweepVertically: Boolean)(
+      tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]],
+      corner: Corner
+    ): Tuple2[TreeSet[Double], List[ExtendedCorner]] = {
 
-    val tree: SIRtree = new SIRtree()
-    val edges: Iterator[List[CornerPoint]] = corners.grouped(2)
+    val (tm, ecs) = tuple
+    val z: Double = if (sweepVertically) corner.x else corner.y
+    val doExtend: Boolean = sweepVertically == (corner.angle.abs != 90)
 
-    if (isVertical) 
-      edges foreach { e => tree.insert(e.head.y, e.last.y, e.head.x) }
+    if (tm.contains(z))
+      (corner, doExtend) match {
+        case (Corner(_, true, _), true) => (tm - z, corner.extend(tm - z) :: ecs)
+        case _ => (tm - z, ecs)
+      }
     else
-      edges foreach { e => tree.insert(e.head.x, e.last.x, e.head.y) }
-
-    tree
+      (corner, doExtend) match {
+        case (Corner(_, true, _), true) => (tm + z, corner.extend(tm) :: ecs)
+        case _ => (tm + z, ecs)
+      }
   }
 
-  private def folder(
+  private def cornerFolder(
       stacks: Tuple3[List[Point], List[Point], List[Point]],
       corner: CornerPoint): Tuple3[List[Point], List[Point], List[Point]] = {
 
@@ -62,28 +70,22 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  private def extendCorners(
-      corners: List[Corner],
-      edges: List[Corner],
-      isVertical: Boolean): List[ExtendedCorner] = {
-
-    val edgeTree: SIRtree = buildIntervalTree(edges, !isVertical)
-
-    corners
-      .filter(c => c.isConvex && isVertical == c.extendsVertically)
-      .map(_.extendCorner(edgeTree))
-  }
-  
   def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
     val startsVertically: Boolean = corners.head.angle.abs != 90
 
     val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-    val vEdges: List[ExtendedCorner] = extendCorners(corners.tail, hc, true)
-    val vCorners: List[Corner] = vEdges.flatMap(_.toListCorner)
+    val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
+    val vEdges: List[ExtendedCorner] = hc
+      .sorted(CornerOrderingX)
+      .foldLeft(init)(sweepFolder(false))
+      ._2
 
-    val hEdges: List[ExtendedCorner] = extendCorners(corners.tail, vCorners ++ vc, false)
+    val hEdges: List[ExtendedCorner] = (vEdges.flatMap(_.toListCorner) ++ vc)
+      .sorted(CornerOrderingY)
+      .foldLeft(init)(sweepFolder(true))
+      ._2
 
     vEdges ++ hEdges ++ corners.tail.filterNot(_.isConvex)
   }
@@ -96,13 +98,13 @@ object OrthogonalPolygonPartitioner {
   def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
     val init: Tuple3[List[Point], List[Point], List[Point]] = (Nil, Nil, Nil)
   
-    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(init)(folder)
-    val ul: Vector[Point] = upperLeft.toVector.sorted(XOrdering)
-    val lr: Vector[Point] = lowerRight.toVector.sorted(YOrdering)
+    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(init)(cornerFolder)
+    val ul: Vector[Point] = upperLeft.toVector.sorted(PointOrderingX)
+    val lr: Vector[Point] = lowerRight.toVector.sorted(PointOrderingY)
   
     lowerLeft map { p =>
-      val i1 = extractIndex(ul.search(p)(XOrdering))
-      val i2 = extractIndex(lr.search(p)(YOrdering))
+      val i1 = extractIndex(ul.search(p)(PointOrderingX))
+      val i2 = extractIndex(lr.search(p)(PointOrderingY))
       Rectangle(ul(i1), lr(i2))
     }
   }

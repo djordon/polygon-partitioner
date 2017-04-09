@@ -1,5 +1,6 @@
 package org.jeom
 
+import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._
 
 import com.vividsolutions.jts.algorithm.Angle
@@ -16,14 +17,27 @@ object Point {
   def apply(coord: Coordinate) = new Point(coord.x, coord.y)
 }
 
-object XOrdering extends Ordering[Point] {
+
+object PointOrderingX extends Ordering[Point] {
     def compare(a: Point, b: Point) =
       implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
 }
 
 
-object YOrdering extends Ordering[Point] {
+object PointOrderingY extends Ordering[Point] {
     def compare(a: Point, b: Point) =
+      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
+}
+
+
+object CornerOrderingX extends Ordering[CornerPoint] {
+    def compare(a: CornerPoint, b: CornerPoint) =
+      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
+}
+
+
+object CornerOrderingY extends Ordering[CornerPoint] {
+    def compare(a: CornerPoint, b: CornerPoint) =
       implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
 }
 
@@ -48,28 +62,15 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 
 
 case class Corner(point: Point, isConvex: Boolean, angle: Int) extends CornerPoint {
-
-  def extendsVertically: Boolean = angle.abs == 90
-
-  def extendCorner(edgeTree: SIRtree): ExtendedCorner = {
-    val candidates: Iterable[Double] = edgeTree
-      .query(this.extensionCoord)
-      .toList.asInstanceOf[List[Double]]
-      .filter(this.extensionOrder(_))
-
-    val z: Double = if (angle == 90 || angle == 0) candidates.min else candidates.max
-    val destination: Point = if (angle.abs == 90) Point(point.x, z) else Point(z, point.y)
+  def extend(treeSet: TreeSet[Double]): ExtendedCorner = {
+    val destination: Point = angle match {
+      case 0 => Point(treeSet.from(x).firstKey, y)
+      case 180 => Point(treeSet.to(x).lastKey, y)
+      case -90 => Point(x, treeSet.to(y).lastKey)
+      case 90 => Point(x, treeSet.from(y).firstKey)
+    }
 
     ExtendedCorner(point, destination, angle)
-  }
-
-  def extensionCoord: Double = if (angle.abs == 90) point.x else point.y
-
-  def extensionOrder(xy: Double): Boolean = angle match {
-      case 0 => xy > point.x
-      case 90 => xy > point.y
-      case 180 => xy < point.x
-      case -90 => xy < point.y
   }
 }
 
