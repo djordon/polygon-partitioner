@@ -221,26 +221,19 @@ GeometryUtils.plotly(ans.head, Some(ans.last), "polygonizer split")
 
 
 val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)
-
+val corners = OrthogonalPolygonPartitioner.extractCorners(orthPolygon)
 val startsVertically: Boolean = corners.head.angle.abs != 90
 
 val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
 val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
 val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
-val vEdges: List[ExtendedCorner] = hc
-  .sorted(CornerOrderingX)
-  .foldLeft(init)(OrthogonalPolygonPartitioner.sweepFolder(false))
-  ._2
-
+val vEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender.extendCorners(hc, extendVertically = true)
 // val vEdges: List[ExtendedCorner] = extendCorners(corners.tail, hc, true)
 val vCorners: List[Corner] = vEdges.flatMap(_.toListCorner)
 
 // val hEdges: List[ExtendedCorner] = extendCorners(corners.tail, vCorners ++ vc, false)
-val hEdges: List[ExtendedCorner] = (vc ++ vCorners)
-  .sorted(CornerOrderingY)
-  .foldLeft(init)(OrthogonalPolygonPartitioner.sweepFolder(true))
-  ._2
+val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender.extendCorners(vc ++ vCorners, extendVertically = false)
 
 val lines = vEdges ++ hEdges
 
