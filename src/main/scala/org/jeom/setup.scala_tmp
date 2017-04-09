@@ -1,6 +1,9 @@
 import org.jeom._
+
+import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
 import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Polygon, Geometry, Coordinate, LineString}
 import com.vividsolutions.jts.index.strtree.SIRtree
@@ -16,9 +19,115 @@ import GeometryUtils.IterablePolygon
 val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
 val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
-val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
+// val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
+
+val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)
+
+// val corners = OrthogonalPolygonPartitioner.extractCorners(orthPolygon)
+val startsVertically: Boolean = corners.head.angle.abs != 90
+
+val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+val treeSet = TreeSet[Double]()
+val empty: List[ExtendedCorner] = Nil
+
+val (_, ves) = hc.sorted(CornerOrderingX).foldLeft((treeSet, empty)) {
+    (tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]], cn: Corner) =>
+
+  val (tm, ecs) = tuple
+  cn match {
+    case Corner(Point(x, y), true, 90) if (tm.contains(y)) =>
+      (tm - y, ExtendedCorner(cn.point, Point(x, (tm - y).from(y).firstKey), cn.angle) :: ecs)
+
+    case Corner(Point(x, y), true, 90) if (!tm.contains(y)) =>
+      (tm + y, ExtendedCorner(cn.point, Point(x, tm.from(y).firstKey), cn.angle) :: ecs)
+
+    case Corner(Point(x, y), true, -90) if (tm.contains(y)) =>
+      (tm - y, ExtendedCorner(cn.point, Point(x, (tm - y).to(y).lastKey), cn.angle) :: ecs)
+
+    case Corner(Point(x, y), true, -90) if (!tm.contains(y)) =>
+      (tm + y, ExtendedCorner(cn.point, Point(x, tm.to(y).lastKey), cn.angle) :: ecs)
+
+    case Corner(Point(_, y), _, _) if (tm.contains(y)) => (tm - y, ecs)
+
+    case Corner(Point(_, y), _, _) if (!tm.contains(y)) => (tm + y, ecs)
+  }
+}
+
+val (_, ves2) = hc.sorted(CornerOrderingX).foldLeft((treeSet, empty)) {
+    (tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]], cn: Corner) =>
+
+  val (tm, ecs) = tuple
+  if (tm.contains(cn.y))
+    cn match {
+      case Corner(Point(x, y), true, 90) =>
+        (tm - y, cn.extendCorner(tm - y) :: ecs)
+        // (tm - y, ExtendedCorner(cn.point, Point(x, (tm - y).from(y).firstKey), cn.angle) :: ecs)
+
+      case Corner(Point(x, y), true, -90) =>
+        (tm - y, cn.extendCorner(tm - y) :: ecs)
+        // (tm - y, ExtendedCorner(cn.point, Point(x, (tm - y).to(y).lastKey), cn.angle) :: ecs)
+
+      case Corner(Point(_, y), _, _) if (tm.contains(y)) => (tm - y, ecs)
+    }
+  else
+    cn match {
+      case Corner(Point(x, y), true, 90) =>
+        (tm + y, cn.extendCorner(tm - y) :: ecs)
+        // (tm + y, ExtendedCorner(cn.point, Point(x, tm.from(y).firstKey), cn.angle) :: ecs)
+
+      case Corner(Point(x, y), true, -90) =>
+        (tm + y, cn.extendCorner(tm - y) :: ecs)
+        // (tm + y, ExtendedCorner(cn.point, Point(x, tm.to(y).lastKey), cn.angle) :: ecs)
+
+      case Corner(Point(_, y), _, _) => (tm + y, ecs)
+    }
+}
 
 
+ves.toSet == vEdges.toSet
+val vCorners: List[Corner] = ves.flatMap(_.toListCorner)
+
+
+val (_, hes) = (vc ++ vCorners).sorted(YOrdering1).foldLeft((treeSet, empty)) {
+    (tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]], cn: Corner) =>
+
+  val (tm, ecs) = tuple
+  if (tm.contains(cn.x))
+    cn match {
+      case Corner(Point(x, y), true, 0) =>
+        (tm - x, ExtendedCorner(cn, Point((tm - x).from(x).firstKey, y)) :: ecs)
+
+      case Corner(Point(x, y), true, 180) =>
+        (tm - x, ExtendedCorner(cn, Point((tm - x).to(x).lastKey, y)) :: ecs)
+
+      case Corner(Point(x, _), _, _) => (tm - x, ecs)
+    }
+  else
+    cn match {
+      case Corner(Point(x, y), true, 0) =>
+        (tm + x, ExtendedCorner(cn, Point(tm.from(x).firstKey, y)) :: ecs)
+
+      case Corner(Point(x, y), true, 180) =>
+        (tm + x, ExtendedCorner(cn, Point(tm.to(x).lastKey, y)) :: ecs)
+
+      case Corner(Point(x, _), _, _) => (tm + x, ecs)
+    }
+}
+
+
+
+val vEdges: List[ExtendedCorner] = OrthogonalPolygonPartitioner.extendCorners(corners.tail, hc, true)
+val vCorners: List[Corner] = vEdges.flatMap(_.toListCorner)
+val hEdges: List[ExtendedCorner] = OrthogonalPolygonPartitioner.extendCorners(corners.tail, vCorners ++ vc, false)
+
+val t = scala.collection.immutable.TreeMap[Double, Double](1.2 -> 9.0, 2.0 -> 3.9 , -2.3 -> 4.5, 9.9 -> 17.2)
+
+t match {
+  case _: IndexedSeqLike[Double] => println("hope")
+  case _ => println("damn")
+}
 
 import org.scalameter._
 val tolerance = scala.math.pow(2, -11)
@@ -112,6 +221,28 @@ GeometryUtils.plotly(ans.head, Some(ans.last), "polygonizer split")
 
 
 val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)
+
+val startsVertically: Boolean = corners.head.angle.abs != 90
+
+val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
+val vEdges: List[ExtendedCorner] = hc
+  .sorted(CornerOrderingX)
+  .foldLeft(init)(OrthogonalPolygonPartitioner.sweepFolder(false))
+  ._2
+
+// val vEdges: List[ExtendedCorner] = extendCorners(corners.tail, hc, true)
+val vCorners: List[Corner] = vEdges.flatMap(_.toListCorner)
+
+// val hEdges: List[ExtendedCorner] = extendCorners(corners.tail, vCorners ++ vc, false)
+val hEdges: List[ExtendedCorner] = (vc ++ vCorners)
+  .sorted(CornerOrderingY)
+  .foldLeft(init)(OrthogonalPolygonPartitioner.sweepFolder(true))
+  ._2
+
+val lines = vEdges ++ hEdges
 
 import co.theasi.plotly._
 
