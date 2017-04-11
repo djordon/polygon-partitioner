@@ -68,7 +68,7 @@ object PolygonSimplifier {
     vecs2polygon _
   }
 
-  def removeBasisColinearity: Polygon => Polygon = {
+  def removeAxisAlignedColinearity: Polygon => Polygon = {
     polygon2vecs _ andThen 
     filterVecs(Vec.vecBasisFolder) _ andThen 
     vecs2polygon _
@@ -96,16 +96,18 @@ object OrthogonalPolygonBuilder {
       densify: Boolean = false): Polygon = {
 
     val poly: Polygon = densify match {
-      case false => DouglasPeuckerSimplifier
-        .simplify(polygon, tolerance.max(0))
+      case false if tolerance > 0 => DouglasPeuckerSimplifier
+        .simplify(polygon, tolerance)
         .asInstanceOf[Polygon]
 
-      case true => Densifier
-        .densify(polygon, tolerance.max(0))
+      case true if tolerance > 0 => Densifier
+        .densify(polygon, tolerance)
         .asInstanceOf[Polygon]
+
+      case _ => polygon
     }
 
-    val simpler: Polygon = PolygonSimplifier.removeBasisColinearity(poly)
+    val simpler: Polygon = PolygonSimplifier.removeAxisAlignedColinearity(poly)
 
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)

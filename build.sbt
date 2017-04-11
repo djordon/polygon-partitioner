@@ -13,7 +13,7 @@ lazy val projectSettings = Seq(
 
   fork in run := true,
 
-  scalacOptions += "-target:jvm-1.8",
+  scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
 
   mainClass in (Compile, run) := Some("org.jeom.Polygon"),
@@ -27,7 +27,7 @@ lazy val projectSettings = Seq(
   libraryDependencies ++= Seq(
     // "org.locationtech.jts" % "jts-core" % "1.14.0",
     "com.vividsolutions" % "jts-core" % "1.14.0",
-    "org.geotools.jdbc" % "gt-jdbc-postgis" % "16.2",
+    // "org.geotools.jdbc" % "gt-jdbc-postgis" % "16.2",
 
     // Profiling
     "com.storm-enroute" %% "scalameter-core" % "0.7",
