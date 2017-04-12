@@ -38,7 +38,7 @@ object PolygonSimplifier {
   import GeometryUtils.IterablePolygon
   val geometryFactory = new GeometryFactory()
 
-  private def polygon2vecs(pg: Polygon): List[Vec] = {
+  def polygon2vecs(pg: Polygon): List[Vec] = {
     pg.toList
       .sliding(2, 1)
       .map(Vec.apply)
@@ -86,6 +86,25 @@ object OrthogonalPolygonBuilder {
     geometryFactory
       .createLineString(points.toArray)
       .getEnvelope
+  }
+
+  def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+    val simpler: Polygon = PolygonSimplifier.removeAxisAlignedColinearity(polygon)
+    val length: Int = size.max(3)
+    val window: Int = step.min(length - 2).max(1)
+
+    val coveringRectangles: List[Geometry] = simpler
+      .sliding(length, window)
+      .map(coverCoordinates)
+      .toList
+
+    val newBoundary: LineString = CascadedPolygonUnion
+      .union(coveringRectangles.asJavaCollection)
+      .asInstanceOf[Polygon]
+      .getExteriorRing
+
+    PolygonSimplifier removeColinearity
+      geometryFactory.createPolygon(newBoundary.getCoordinates)
   }
 
   def build(

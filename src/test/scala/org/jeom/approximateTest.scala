@@ -4,8 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
 import com.vividsolutions.jts.io.WKTReader
-
-import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
 import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
@@ -32,9 +31,13 @@ trait PolygonFixtures {
       .asInstanceOf[Polygon]
 
     val preDensifiedPolygon: Polygon = wktReader
-      .read("Polygon ((0 0, 0 1, 0.25 1.25, 0.5 1.5, 0.75 1.75, 1 2, 1 0, 0.75 0, 0.75 0.25, 0.5 0.25, 0.5 0, 0 0))")
+      .read("""
+        |Polygon ((0 0, 0 1, 0.25 1.25, 0.5 1.5,
+        | 0.75 1.75, 1 2, 1 0, 0.75 0, 0.75 0.25,
+        | 0.5 0.25, 0.5 0, 0 0))""".stripMargin.replaceAll("\n", " ")
+      )
       .asInstanceOf[Polygon]
-
+//"Polygon ((0 0, 0 1, 0.25 1.25, 0.5 1.5, 0.75 1.75, 1 2, 1 0, 0.75 0, 0.75 0.25, 0.5 0.25, 0.5 0, 0 0))")
     val approximatedPolygon: Polygon = wktReader
       .read("Polygon ((0 0, 0 1.5, 0.25 1.5, 0.25 1.75, 0.5 1.75, 0.5 2, 1 2, 1 0, 0 0))")
       .asInstanceOf[Polygon]
@@ -42,8 +45,18 @@ trait PolygonFixtures {
 }
 
 
-class PolygonSimplifierSpec extends WordSpec with Matchers with PolygonFixtures {
+class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
   val geometryFactory = new GeometryFactory()
+  val randomGeometryFactory = new RandomPointsBuilder()
+
+  def polygonGenerator(numPoints: Int = 50): Polygon = {
+    randomGeometryFactory.setNumPoints(numPoints)
+
+    randomGeometryFactory
+      .getGeometry
+      .convexHull
+      .asInstanceOf[Polygon]
+  }
 
   "PolygonSimplifier" can {
 
@@ -78,18 +91,39 @@ class PolygonSimplifierSpec extends WordSpec with Matchers with PolygonFixtures 
   }
 
   "OrthogonalPolygonBuilder" can {
-    "build" should {
-      "not modify input polygon when tolerance is zero" in {
-        val approximated1: Polygon = OrthogonalPolygonBuilder
-          .build(fixtures.preDensifiedPolygon, tolerance=0, densify=true)
+    "cover" should {
+      "work as create the expected polygon" in {
+        val covered: Polygon = OrthogonalPolygonBuilder
+          .cover(fixtures.preDensifiedPolygon)
 
-        val approximated2: Polygon = OrthogonalPolygonBuilder
-          .build(fixtures.preDensifiedPolygon, tolerance=0, densify=false)
-
-        approximated1 shouldEqual fixtures.approximatedPolygon
-        approximated2 shouldEqual fixtures.approximatedPolygon
+        covered shouldEqual (fixtures.approximatedPolygon)
       }
 
+      "create an orthogonal polygon" in {
+        val randomPolygon: Polygon = polygonGenerator()
+        val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+        val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
+
+        val vecs: List[Vec] = PolygonSimplifier.polygon2vecs(randomCover)
+        val isAxisAligned: List[Boolean] = vecs
+          .map(v => axisAlignedAngles.contains(v.angle))
+  
+        isAxisAligned.reduce(_ && _) should be (true)
+      }
+
+      "cover the polygon" in {
+        val covered: Polygon = OrthogonalPolygonBuilder
+          .cover(fixtures.preDensifiedPolygon)
+
+        val randomPolygon: Polygon = polygonGenerator()
+        val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+
+        covered covers fixtures.preDensifiedPolygon should be (true)
+        randomCover covers randomPolygon should be (true)
+      }
+    }
+
+    "build" should {
       "densifying should lead to better approximations" in {
         val approximated1: Polygon = OrthogonalPolygonBuilder
           .build(fixtures.preDensifiedPolygon, tolerance=0.1, densify=true)
