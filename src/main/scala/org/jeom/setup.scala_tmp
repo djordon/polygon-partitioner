@@ -279,3 +279,22 @@ def plotly(
 }
 
 plotly(orthPolygon, lines, ans, "partitions finalized!")
+
+
+
+
+
+import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LineString}
+import com.vividsolutions.jts.dissolve.LineDissolver
+val geometryFactory = new GeometryFactory()
+
+val line1 = geometryFactory.createLineString(Array(new Coordinate(0, 0), new Coordinate(1, 0)))
+val line2 = geometryFactory.createLineString(Array(new Coordinate(0, 0), new Coordinate(0.75, 0)))
+val line3 = geometryFactory.createLineString(Array(new Coordinate(0.25, 0), new Coordinate(1, 0)))
+
+val dissolver = new LineDissolver()
+// dissolver.add(line1)
+dissolver.add(line2)
+dissolver.add(line3)
+
+val ans = dissolver.getResult()

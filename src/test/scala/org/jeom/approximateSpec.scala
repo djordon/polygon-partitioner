@@ -1,6 +1,7 @@
 package org.jeom
 
 import org.scalatest.{Matchers, WordSpec}
+import org.scalactic.TolerantNumerics
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
 import com.vividsolutions.jts.io.WKTReader
@@ -56,12 +57,16 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
   val geometryFactory = new GeometryFactory()
   val randomGeometryFactory = new RandomPointsBuilder()
 
+  val epsilon: Double = 1.1102230246251568E-16
+  implicit val doubleEq = TolerantNumerics.tolerantDoubleEquality(epsilon)
+
   def polygonGenerator(numPoints: Int = 50): Polygon = {
     randomGeometryFactory.setNumPoints(numPoints)
 
     randomGeometryFactory
       .getGeometry
       .convexHull
+      .norm()
       .asInstanceOf[Polygon]
   }
 
@@ -94,14 +99,14 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
         simplified shouldEqual fixtures.simplePolygon
 
-        val original: Polygon = fixtures.simplePolygon
+        val original: Polygon = polygonGenerator() //fixtures.simplePolygon
         val densified: Polygon = PolygonApproximator.densify(original, 0.1)
 
         val polygon: Polygon = PolygonApproximator.removeColinearity(densified)
         val simpler: Polygon = PolygonApproximator.simplify(densified, 0.001)
 
-        polygon.difference(original).getArea should be (0.0 +- 0.000001)
-        simpler.difference(original).getArea should be (0.0 +- 0.000001)
+        polygon shouldEqual original
+        simpler shouldEqual original
       }
     }
   }

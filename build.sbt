@@ -50,6 +50,7 @@ lazy val projectSettings = Seq(
     // "org.json4s" %% "json4s-ext" % versions.json4s,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
     "com.typesafe" % "config" % "1.3.0",
+
     // Test
     "org.scalatest" %% "scalatest" % "2.2.4" % "test"
   ),
