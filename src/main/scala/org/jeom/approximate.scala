@@ -34,7 +34,7 @@ object Vec {
 }
 
 
-object PolygonSimplifier {
+object PolygonApproximator {
   import GeometryUtils.IterablePolygon
   val geometryFactory = new GeometryFactory()
 
@@ -73,11 +73,22 @@ object PolygonSimplifier {
     filterVecs(Vec.vecBasisFolder) _ andThen 
     vecs2polygon _
   }
+
+  def simplify(polygon: Polygon, tolerance: Double): Polygon = DouglasPeuckerSimplifier
+    .simplify(polygon, tolerance)
+    .norm()
+    .asInstanceOf[Polygon]
+
+  def densify(polygon: Polygon, tolerance: Double): Polygon = Densifier
+    .densify(polygon, tolerance)
+    .norm()
+    .asInstanceOf[Polygon]
 }
 
 
 object OrthogonalPolygonBuilder {
   import GeometryUtils.IterablePolygon
+  import PolygonApproximator.{densify, removeColinearity, simplify}
 
   val tol: Double = scala.math.pow(2, -12)
   val geometryFactory = new GeometryFactory()
@@ -89,7 +100,7 @@ object OrthogonalPolygonBuilder {
   }
 
   def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
-    val simpler: Polygon = PolygonSimplifier.removeAxisAlignedColinearity(polygon)
+    val simpler: Polygon = PolygonApproximator.removeAxisAlignedColinearity(polygon)
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)
 
@@ -103,45 +114,22 @@ object OrthogonalPolygonBuilder {
       .asInstanceOf[Polygon]
       .getExteriorRing
 
-    PolygonSimplifier removeColinearity
-      geometryFactory.createPolygon(newBoundary.getCoordinates)
+    removeColinearity(geometryFactory.createPolygon(newBoundary.getCoordinates))
   }
 
-  def build(
+  def approximate(
       polygon: Polygon,
-      tolerance: Double = tol,
+      simplifyTolerance: Double = tol,
+      densifyTolerance: Double = 10.0,
       size: Int = 3,
-      step: Int = 1,
-      densify: Boolean = false): Polygon = {
+      step: Int = 1): Polygon = {
 
-    val poly: Polygon = densify match {
-      case false if tolerance > 0 => DouglasPeuckerSimplifier
-        .simplify(polygon, tolerance)
-        .asInstanceOf[Polygon]
+    val method: Polygon => Polygon = Function.chain(Seq(
+      simplify(_: Polygon, simplifyTolerance),
+      densify(_: Polygon, densifyTolerance),
+      cover(_: Polygon, size, step)
+    ))
 
-      case true if tolerance > 0 => Densifier
-        .densify(polygon, tolerance)
-        .asInstanceOf[Polygon]
-
-      case _ => polygon
-    }
-
-    val simpler: Polygon = PolygonSimplifier.removeAxisAlignedColinearity(poly)
-
-    val length: Int = size.max(3)
-    val window: Int = step.min(length - 2).max(1)
-
-    val coveringRectangles: List[Geometry] = simpler
-      .sliding(length, window)
-      .map(coverCoordinates)
-      .toList
-
-    val newBoundary: LineString = CascadedPolygonUnion
-      .union(coveringRectangles.asJavaCollection)
-      .asInstanceOf[Polygon]
-      .getExteriorRing
-
-    PolygonSimplifier removeColinearity
-      geometryFactory.createPolygon(newBoundary.getCoordinates)
+    method(polygon)
   }
 }

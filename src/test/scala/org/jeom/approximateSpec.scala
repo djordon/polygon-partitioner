@@ -30,16 +30,23 @@ trait PolygonFixtures {
       .read("Polygon ((0 0, 0 1, 0.5 1.5, 1 2, 1 1, 1 0, 0 0))")
       .asInstanceOf[Polygon]
 
+    val housePolygon: Polygon = wktReader
+      .read("""
+        |Polygon ((0 0, 0 1, 1 2, 1 0, 0.75 0,
+        | 0.75 0.25, 0.5 0.25, 0.5 0, 0 0))""".stripMargin.replaceAll("\n", " "))
+      .asInstanceOf[Polygon]
+
     val preDensifiedPolygon: Polygon = wktReader
       .read("""
         |Polygon ((0 0, 0 1, 0.25 1.25, 0.5 1.5,
         | 0.75 1.75, 1 2, 1 0, 0.75 0, 0.75 0.25,
-        | 0.5 0.25, 0.5 0, 0 0))""".stripMargin.replaceAll("\n", " ")
-      )
+        | 0.5 0.25, 0.5 0, 0 0))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
-//"Polygon ((0 0, 0 1, 0.25 1.25, 0.5 1.5, 0.75 1.75, 1 2, 1 0, 0.75 0, 0.75 0.25, 0.5 0.25, 0.5 0, 0 0))")
+
     val approximatedPolygon: Polygon = wktReader
-      .read("Polygon ((0 0, 0 1.5, 0.25 1.5, 0.25 1.75, 0.5 1.75, 0.5 2, 1 2, 1 0, 0 0))")
+      .read("""
+        |Polygon ((0 0, 0 1.5, 0.25 1.5, 0.25 1.75,
+        | 0.5 1.75, 0.5 2, 1 2, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
   }
 }
@@ -58,21 +65,21 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
       .asInstanceOf[Polygon]
   }
 
-  "PolygonSimplifier" can {
+  "PolygonApproximator" can {
 
     "removeAxisAlignedColinearity" should {
       "remove redundent points that lie on axis aligned lines" in {
-        val simplified: Polygon = PolygonSimplifier
+        val simplified: Polygon = PolygonApproximator
           .removeAxisAlignedColinearity(fixtures.redundentBasisPointPolygon)
 
         simplified shouldEqual fixtures.simplePolygon
       }
 
       "keep redundent points that lie on non-axis aligned lines" in {
-        val simplified: Polygon = PolygonSimplifier
+        val simplified: Polygon = PolygonApproximator
           .removeAxisAlignedColinearity(fixtures.redundentPointPolygon)
 
-        val nothingHappened: Polygon = PolygonSimplifier
+        val nothingHappened: Polygon = PolygonApproximator
           .removeAxisAlignedColinearity(fixtures.preDensifiedPolygon)
 
         simplified shouldEqual fixtures.lessRedundentPointPolygon
@@ -82,17 +89,26 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
     "removeColinearity" should {
       "remove all colinear points" in {
-        val simplified: Polygon = PolygonSimplifier
+        val simplified: Polygon = PolygonApproximator
           .removeColinearity(fixtures.redundentPointPolygon)
 
         simplified shouldEqual fixtures.simplePolygon
+
+        val original: Polygon = fixtures.simplePolygon
+        val densified: Polygon = PolygonApproximator.densify(original, 0.1)
+
+        val polygon: Polygon = PolygonApproximator.removeColinearity(densified)
+        val simpler: Polygon = PolygonApproximator.simplify(densified, 0.001)
+
+        polygon.difference(original).getArea should be (0.0 +- 0.000001)
+        simpler.difference(original).getArea should be (0.0 +- 0.000001)
       }
     }
   }
 
   "OrthogonalPolygonBuilder" can {
     "cover" should {
-      "work as create the expected polygon" in {
+      "create the expected polygon" in {
         val covered: Polygon = OrthogonalPolygonBuilder
           .cover(fixtures.preDensifiedPolygon)
 
@@ -104,7 +120,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
         val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
         val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
-        val vecs: List[Vec] = PolygonSimplifier.polygon2vecs(randomCover)
+        val vecs: List[Vec] = PolygonApproximator.polygon2vecs(randomCover)
         val isAxisAligned: List[Boolean] = vecs
           .map(v => axisAlignedAngles.contains(v.angle))
   
@@ -123,22 +139,30 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
       }
     }
 
-    "build" should {
-      "densifying should lead to better approximations" in {
+    "approximate" should {
+      "lead to better approximations as densifyTolerance decreases" in {
+        val approximated0: Polygon = OrthogonalPolygonBuilder
+          .approximate(fixtures.housePolygon, simplifyTolerance=0, densifyTolerance=0.01)
+
         val approximated1: Polygon = OrthogonalPolygonBuilder
-          .build(fixtures.preDensifiedPolygon, tolerance=0.1, densify=true)
+          .approximate(fixtures.housePolygon, simplifyTolerance=0, densifyTolerance=0.1)
 
         val approximated2: Polygon = OrthogonalPolygonBuilder
-          .build(fixtures.preDensifiedPolygon, tolerance=0.01, densify=false)
+          .approximate(fixtures.housePolygon, simplifyTolerance=0, densifyTolerance=1)
+
+        val diffArea0: Double = approximated0
+          .difference(fixtures.housePolygon)
+          .getArea
 
         val diffArea1: Double = approximated1
-          .difference(fixtures.preDensifiedPolygon)
+          .difference(fixtures.housePolygon)
           .getArea
 
         val diffArea2: Double = approximated2
-          .difference(fixtures.preDensifiedPolygon)
+          .difference(fixtures.housePolygon)
           .getArea
 
+        diffArea0 should be < diffArea1
         diffArea1 should be < diffArea2
       }
     }
