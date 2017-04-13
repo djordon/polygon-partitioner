@@ -14,6 +14,19 @@ import scala.language.reflectiveCalls
 trait PolygonFixtures {
   val wktReader = new WKTReader()
 
+  val geometryFactory = new GeometryFactory()
+  val randomGeometryFactory = new RandomPointsBuilder()
+
+  def generatePolygon(numPoints: Int = 50): Polygon = {
+    randomGeometryFactory.setNumPoints(numPoints)
+
+    randomGeometryFactory
+      .getGeometry
+      .convexHull
+      .norm()
+      .asInstanceOf[Polygon]
+  }
+
   val fixtures = new {
     val simplePolygon: Polygon = wktReader
       .read("Polygon ((0 0, 0 1, 1 2, 1 0, 0 0))")
@@ -52,23 +65,9 @@ trait PolygonFixtures {
   }
 }
 
-
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
-  val geometryFactory = new GeometryFactory()
-  val randomGeometryFactory = new RandomPointsBuilder()
-
   val epsilon: Double = 1.1102230246251568E-16
   implicit val doubleEq = TolerantNumerics.tolerantDoubleEquality(epsilon)
-
-  def polygonGenerator(numPoints: Int = 50): Polygon = {
-    randomGeometryFactory.setNumPoints(numPoints)
-
-    randomGeometryFactory
-      .getGeometry
-      .convexHull
-      .norm()
-      .asInstanceOf[Polygon]
-  }
 
   "PolygonApproximator" can {
 
@@ -99,7 +98,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
         simplified shouldEqual fixtures.simplePolygon
 
-        val original: Polygon = polygonGenerator() //fixtures.simplePolygon
+        val original: Polygon = generatePolygon()
         val densified: Polygon = PolygonApproximator.densify(original, 0.1)
 
         val polygon: Polygon = PolygonApproximator.removeColinearity(densified)
@@ -121,7 +120,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
       }
 
       "create an orthogonal polygon" in {
-        val randomPolygon: Polygon = polygonGenerator()
+        val randomPolygon: Polygon = generatePolygon()
         val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
         val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
@@ -136,7 +135,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
         val covered: Polygon = OrthogonalPolygonBuilder
           .cover(fixtures.preDensifiedPolygon)
 
-        val randomPolygon: Polygon = polygonGenerator()
+        val randomPolygon: Polygon = generatePolygon()
         val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
 
         covered covers fixtures.preDensifiedPolygon should be (true)
