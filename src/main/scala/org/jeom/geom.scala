@@ -54,7 +54,7 @@ trait CornerPoint {
 
 
 case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
-  def toListCorner: List[Corner] = List(Corner(source, false, 0), Corner(dest, false, 0))
+  def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
   def point: Point = source
   def isConvex: Boolean = true
 }

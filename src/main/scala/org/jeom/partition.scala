@@ -6,8 +6,6 @@ import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
 import com.vividsolutions.jts.geom.{Polygon, Coordinate}
 
-import GeometryUtils.IterablePolygon
-
 
 object OrthononalPolygonCornerExtender {
   lazy val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
@@ -55,6 +53,7 @@ object OrthononalPolygonCornerExtender {
 }
 
 object OrthogonalPolygonPartitioner {
+  import GeometryUtils.IterablePolygon
 
   def extractCorners(polygon: Polygon): List[Corner] = {
     val boundary: List[Coordinate] = polygon.toList.tail
@@ -70,17 +69,17 @@ object OrthogonalPolygonPartitioner {
       .toList
   }
 
-  def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
+  private def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
     val startsVertically: Boolean = corners.head.angle.abs != 90
 
     val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
     val vEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
-      .extendCorners(hc, extendVertically = true)
+      .extendCorners(hc, extendVertically=true)
 
     val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
-      .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically = false)
+      .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically=false)
 
     vEdges ++ hEdges ++ corners.tail.filterNot(_.isConvex)
   }
@@ -113,7 +112,7 @@ object OrthogonalPolygonPartitioner {
     case InsertionPoint(i) => i
   }
 
-  def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
+  private def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
     val init: Tuple3[List[Point], List[Point], List[Point]] = (Nil, Nil, Nil)
   
     val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(init)(cornerFolder)

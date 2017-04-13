@@ -22,7 +22,7 @@ case class Vec(coordinate: Coordinate, angle: Double)
 
 object Vec {
   val angles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
-  val epsilon: Double = 1.1102230246251568E-12
+  val epsilon: Double = 1.1102230246251568E-11
 
   def apply(a: List[Coordinate]) = 
     new Vec(a(1), Angle.toDegrees(Angle.angle(a.head, a.tail.head)))
