@@ -97,7 +97,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
           .asInstanceOf[Polygon]
 
         val simplifiedPolygon: Polygon = PolygonApproximator
-          .removeColinearity(union)
+          .removeAxisAlignedColinearity(union)
 
         simplifiedPolygon shouldEqual poly
       }

@@ -28,16 +28,13 @@ def printThis(p: List[Coordinate]): Unit = {
 
 for (i <- 0 until 100) {
   val original: Polygon = generatePolygon()
-  val poly1: List[Coordinate] = OrthogonalPolygonBuilder.cover(original)
-  val poly2: List[Vec] = PolygonApproximator.removeAxisAlignedColinearity(poly1)
+  val poly1: Polygon = OrthogonalPolygonBuilder.cover(original)
   println(i)
   try {
-    val recs2: List[Rectangle] = OrthogonalPolygonPartitioner.partition(PolygonApproximator.vecs2polygon(poly2))
+    val recs2: List[Rectangle] = OrthogonalPolygonPartitioner.partition(poly1)
   } catch {
     case e: Exception => { 
       printThis(poly1.toList)
-      println("reduced")
-      printThis(poly2.toList.map(_.coord))
       println(s"Failed $i")
       // e.printStackTrace
       // GeometryUtils.plotly(poly2, Some(original), s"try $i")

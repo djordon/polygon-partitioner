@@ -90,27 +90,11 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
         nothingHappened shouldEqual fixtures.preDensifiedPolygon
       }
     }
-
-    "removeColinearity" should {
-      "remove all colinear points" in {
-        val simplified: Polygon = PolygonApproximator
-          .removeColinearity(fixtures.redundentPointPolygon)
-
-        simplified shouldEqual fixtures.simplePolygon
-
-        val original: Polygon = generatePolygon()
-        val densified: Polygon = PolygonApproximator.densify(original, 0.1)
-
-        val polygon: Polygon = PolygonApproximator.removeColinearity(densified)
-        val simpler: Polygon = PolygonApproximator.simplify(densified, 0.001)
-
-        polygon shouldEqual original
-        simpler shouldEqual original
-      }
-    }
   }
 
   "OrthogonalPolygonBuilder" can {
+     import GeometryUtils.IterablePolygon
+
     "cover" should {
       "create the expected polygon" in {
         val covered: Polygon = OrthogonalPolygonBuilder
@@ -124,7 +108,12 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
         val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
         val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
-        val vecs: List[Vec] = PolygonApproximator.polygon2vecs(randomCover)
+        val vecs: List[Vec] = randomCover
+          .toList
+          .sliding(2, 1)
+          .map(Vec.apply)
+          .toList
+
         val isAxisAligned: List[Boolean] = vecs
           .map(v => axisAlignedAngles.contains(v.angle))
   
