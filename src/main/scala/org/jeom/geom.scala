@@ -76,3 +76,12 @@ object Corner {
   def isConvexCorner(corner: List[Coordinate]): Boolean =
     Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
+
+
+case class Vec(coord: Coordinate, angle: Double)
+
+
+object Vec {
+  def apply(a: List[Coordinate]) = 
+    new Vec(a(1), Angle.toDegrees(Angle.angle(a.head, a.tail.head)))
+}
