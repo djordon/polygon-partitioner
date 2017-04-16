@@ -2,7 +2,7 @@ package org.jeom
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
-import com.vividsolutions.jts.geom.{Polygon, Coordinate, Geometry}
+import com.vividsolutions.jts.geom.{Polygon, Coordinate, Geometry, LineString}
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
@@ -12,7 +12,7 @@ import scala.language.reflectiveCalls
 
 class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   import GeometryUtils.IterablePolygon
-
+  /*
   "OrthononalPolygonCornerExtender" can {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
@@ -30,36 +30,6 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
           ExtendedCorner(Point(0.5, 1.75), Point(1.0, 1.75), 0)
         )
         vEdges shouldEqual expectedEdges
-      }
-    }
-  }
-
-  "OrthogonalPolygonDecomposer" can {
-    "decompose" should {
-      "extract the decompose" in {
-        val ans = OrthogonalPolygonDecomposer.decompose(fixtures.chordedPolygon)
-        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
-        x shouldEqual 1
-      // extractChords
-      // ans shouldEqual List(fixtures.chordedPolygon)
-      }
-    }
-    "extractChords" should {
-      "extract the chords" in {
-        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
-        val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
-        corners shouldEqual 2
-      }
-      "whatevere" in {
-        val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
-        val convexPoints: Set[Point] = corners.filter(_.isConvex).map(_.point).toSet
-        val startsVertically: Boolean = corners.head.angle.abs != 90
-
-        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val ans = OrthononalPolygonCornerExtender.extendCorners(vc, false)
-        ans shouldEqual 3
       }
     }
   }
@@ -130,6 +100,40 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
           .removeAxisAlignedColinearity(union)
 
         simplifiedPolygon shouldEqual poly
+      }
+    }
+  }
+  */
+  "OrthogonalPolygonDecomposer" can {
+    "decompose" should {
+      "extract the decompose" in {
+        val ans = OrthogonalPolygonDecomposer.decompose(fixtures.chordedPolygon)
+        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
+        ans shouldEqual 1
+      // extractChords
+      // ans shouldEqual List(fixtures.chordedPolygon)
+      }
+    }
+    "extractChords" should {
+      "extract the chords" in {
+        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
+        // val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
+        x shouldEqual 2
+      }
+
+      "whatevere" in {
+        val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
+        val convexPoints: Set[Point] = corners.filter(_.isConvex).map(_.point).toSet
+        val startsVertically: Boolean = corners.head.angle.abs != 90
+
+        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+        val vChords: List[ExtendedCorner] = OrthononalPolygonCornerExtender.extractChords(hc, true)
+        val hChords: List[ExtendedCorner] = OrthononalPolygonCornerExtender.extractChords(vChords.flatMap(_.toListCorner) ++ vc, false)
+
+        val chords: List[LineString] = (vChords ++ hChords).map(_.toLineString)
+        chords shouldEqual 3
       }
     }
   }
