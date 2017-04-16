@@ -1,10 +1,9 @@
 package org.jeom
 
-import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._
 
 import com.vividsolutions.jts.algorithm.Angle
-import com.vividsolutions.jts.geom.Coordinate
+import com.vividsolutions.jts.geom.{Coordinate, LineString}
 
 
 case class Point(x: Double, y: Double) {
@@ -57,6 +56,12 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
   def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
   def point: Point = source
   def isConvex: Boolean = true
+  def toLineString: LineString = {
+    GeometryUtils.geometryFactory.createLineString(
+      Array(new Coordinate(source.x, source.y),
+            new Coordinate(dest.x, dest.y))
+    )
+  }
 }
 
 

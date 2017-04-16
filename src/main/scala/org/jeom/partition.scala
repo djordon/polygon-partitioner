@@ -1,14 +1,49 @@
 package org.jeom
 
 import scala.collection.immutable.TreeSet
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions._ //asJavaCollection
+import scala.collection.JavaConverters._ //asJavaCollectionConverter
 import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
-import com.vividsolutions.jts.geom.{Polygon, Coordinate}
+import com.vividsolutions.jts.geom.{Polygon, Coordinate, LineString}
+import com.vividsolutions.jts.operation.polygonize.Polygonizer
 
 
 object OrthononalPolygonCornerExtender {
-  lazy val init: Tuple2[TreeSet[Double], List[ExtendedCorner]] = (TreeSet(), Nil)
+  case class SweepContainer(
+      tree: TreeSet[Double],
+      extendedCorners: List[ExtendedCorner],
+      currentLevel: Double = Double.NegativeInfinity,
+      toRemove: Set[Double] = Set()) {
+
+    def sweep(z: Double, level: Double, cn: Corner): SweepContainer = {
+      if (tree contains z) {
+        if (level == currentLevel)
+          SweepContainer(tree, extendCorner(cn, tree - z) :: extendedCorners, level, toRemove + z)
+        else
+          SweepContainer(tree=tree -- toRemove - z, extendedCorners=extendCorner(cn, tree -- toRemove - z) :: extendedCorners, currentLevel=level)
+      } else {
+        if (level == currentLevel)
+          copy(tree=tree + z, extendedCorners=extendCorner(cn, tree) :: extendedCorners, currentLevel=level)
+        else
+          SweepContainer(tree=tree -- toRemove + z, extendedCorners=extendCorner(cn, tree -- toRemove) :: extendedCorners, currentLevel=level)
+      }
+    }
+
+    def sweep(z: Double, level: Double): SweepContainer = {
+      if (tree contains z) {
+        if (level == currentLevel)
+          copy(tree=tree - z)
+        else
+          copy(tree=tree -- toRemove - z, currentLevel=level, toRemove=Set())
+      } else {
+        if (level == currentLevel)
+          copy(tree=tree + z)
+        else
+          copy(tree=tree -- toRemove + z, currentLevel=level, toRemove=Set())
+      }
+    }
+  }
 
   private def extendCorner(cn: Corner, treeSet: TreeSet[Double]): ExtendedCorner = {
     val destination: Point = cn.angle match {
@@ -22,35 +57,86 @@ object OrthononalPolygonCornerExtender {
   }
 
   private def sweepFolder(extendVertically: Boolean)(
-      tuple: Tuple2[TreeSet[Double], List[ExtendedCorner]],
-      corner: Corner
-    ): Tuple2[TreeSet[Double], List[ExtendedCorner]] = {
+      container: SweepContainer, 
+      corner: Corner): SweepContainer = {
 
-    val (tm, ecs) = tuple
     val z: Double = if (extendVertically) corner.y else corner.x
+    val l: Double = if (extendVertically) corner.x else corner.y
     val doExtend: Boolean = extendVertically == (corner.angle.abs == 90)
 
-    if (tm.contains(z))
-      (corner, doExtend) match {
-        case (Corner(_, true, _), true) => (tm - z, extendCorner(corner, tm - z) :: ecs)
-        case _ => (tm - z, ecs)
-      }
-    else
-      (corner, doExtend) match {
-        case (Corner(_, true, _), true) => (tm + z, extendCorner(corner, tm) :: ecs)
-        case _ => (tm + z, ecs)
-      }
+    (corner, doExtend) match {
+      case (Corner(_, true, _), true) => container.sweep(z, l, corner)
+      case _ => container.sweep(z, l)
+    }
   }
 
   def extendCorners(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
     val ordering = if (extendVertically) CornerOrderingX else CornerOrderingY
+    val emptyContainer: SweepContainer = SweepContainer(TreeSet(), Nil)
 
     corners
       .sorted(ordering)
-      .foldLeft(init)(sweepFolder(extendVertically))
-      ._2
+      .foldLeft(emptyContainer)(sweepFolder(extendVertically))
+      .extendedCorners
+  }
+
+  def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
+    val convexPoints: Set[Point] = corners.tail.filter(_.isConvex).map(_.point).toSet
+
+    extendCorners(corners, extendVertically) filter { ec => convexPoints.contains(ec.dest) }
   }
 }
+
+
+object OrthogonalPolygonDecomposer {
+  import GeometryUtils.IterablePolygon
+
+  def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
+    val convexPoints: Set[Point] = corners.filter(_.isConvex).map(_.point).toSet
+
+    OrthononalPolygonCornerExtender.extendCorners(corners, extendVertically) filter { ec => convexPoints.contains(ec.dest) }
+  }
+
+  def extractChords(pg: Polygon): List[ExtendedCorner] = {
+    val corners = OrthogonalPolygonPartitioner.extractCorners(pg)
+    val startsVertically: Boolean = corners.head.angle.abs != 90
+
+    val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+    val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+    val vChords: List[ExtendedCorner] = extractChords(hc, true)
+    val hChords: List[ExtendedCorner] = extractChords(vc, false)
+
+    (vChords ++ hChords)
+  }
+
+  def decompose(pg: Polygon): List[Polygon] = {
+    val corners = OrthogonalPolygonPartitioner.extractCorners(pg)
+    val startsVertically: Boolean = corners.head.angle.abs != 90
+
+    val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+    val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+    val vChords: List[ExtendedCorner] = extractChords(hc, true)
+    val hChords: List[ExtendedCorner] = extractChords(vChords.flatMap(_.toListCorner) ++ vc, false)
+
+    val chords: List[LineString] = (vChords ++ hChords).map(_.toLineString)
+
+    val lines = chords ++ { 
+      pg.sliding(2, 1).map { points =>
+        GeometryUtils
+          .geometryFactory
+          .createLineString(Array(points.head, points.last))
+          .asInstanceOf[LineString]
+      }.toList
+    }
+
+    val polygonizer = new Polygonizer(true)
+    polygonizer.add(lines.asJavaCollection)
+    polygonizer.getPolygons.toList.asInstanceOf[List[Polygon]]
+  }
+}
+
 
 object OrthogonalPolygonPartitioner {
   import GeometryUtils.IterablePolygon

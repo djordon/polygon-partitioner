@@ -2,7 +2,7 @@ package org.jeom
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
-import com.vividsolutions.jts.densify.Densifier
+
 import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
@@ -61,6 +61,12 @@ trait PolygonFixtures {
       .read("""
         |Polygon ((0 0, 0 1.5, 0.25 1.5, 0.25 1.75,
         | 0.5 1.75, 0.5 2, 1 2, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
+      .asInstanceOf[Polygon]
+
+    val chordedPolygon: Polygon = wktReader
+      .read("""
+        |Polygon ((0 0, 0 2, 2 2, 2 1, 3 1, 3 0,
+        | 2 0, 2 -1, 1 -1, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
   }
 }

@@ -34,6 +34,36 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     }
   }
 
+  "OrthogonalPolygonDecomposer" can {
+    "decompose" should {
+      "extract the decompose" in {
+        val ans = OrthogonalPolygonDecomposer.decompose(fixtures.chordedPolygon)
+        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
+        x shouldEqual 1
+      // extractChords
+      // ans shouldEqual List(fixtures.chordedPolygon)
+      }
+    }
+    "extractChords" should {
+      "extract the chords" in {
+        val x = OrthogonalPolygonDecomposer.extractChords(fixtures.chordedPolygon)
+        val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
+        corners shouldEqual 2
+      }
+      "whatevere" in {
+        val corners = OrthogonalPolygonPartitioner.extractCorners(fixtures.chordedPolygon)
+        val convexPoints: Set[Point] = corners.filter(_.isConvex).map(_.point).toSet
+        val startsVertically: Boolean = corners.head.angle.abs != 90
+
+        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+
+        val ans = OrthononalPolygonCornerExtender.extendCorners(vc, false)
+        ans shouldEqual 3
+      }
+    }
+  }
+
   "OrthogonalPolygonPartitioner" can {
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
