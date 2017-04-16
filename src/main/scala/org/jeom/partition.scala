@@ -65,7 +65,7 @@ object OrthononalPolygonCornerExtender {
     val z: Double = if (extendVertically) corner.y else corner.x
     val l: Double = if (extendVertically) corner.x else corner.y
     val doExtend: Boolean = extendVertically == (corner.angle.abs == 90)
-
+    println(container.toString)
     (corner, doExtend) match {
       case (Corner(_, true, _), true) => container.sweep(z, l, corner)
       case _ => container.sweep(z, l)
@@ -97,7 +97,8 @@ object OrthogonalPolygonDecomposer {
     val convexPoints: Set[Point] = corners.filter(_.isConvex).map(_.point).toSet
 
     OrthononalPolygonCornerExtender
-      .extendCorners(corners, extendVertically) filter { ec => convexPoints.contains(ec.dest) }
+      .extendCorners(corners, extendVertically)
+      .filter { ec => convexPoints.contains(ec.dest) }
   }
 
   def extractChords(pg: Polygon): List[ExtendedCorner] = {
@@ -108,7 +109,7 @@ object OrthogonalPolygonDecomposer {
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
-    val hChords: List[ExtendedCorner] = extractChords(vChords.flatMap(_.toListCorner) ++ vc, false)
+    val hChords: List[ExtendedCorner] = extractChords(vc, false)
 
     vChords ++ hChords
   }
@@ -212,6 +213,10 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  def partition: Polygon => List[Rectangle] =
+  def partitionSimple: Polygon => List[Rectangle] =
     extractCorners _ andThen makeRectangleCorners _ andThen extractRectangles _
+
+  def partition(pg: Polygon): List[Rectangle] = OrthogonalPolygonDecomposer
+    .decompose(pg)
+    .flatMap(partitionSimple)
 }
