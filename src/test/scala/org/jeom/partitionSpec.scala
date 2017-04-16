@@ -12,7 +12,7 @@ import scala.language.reflectiveCalls
 
 class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   import GeometryUtils.IterablePolygon
-/*
+
   "OrthononalPolygonCornerExtender" can {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
@@ -103,13 +103,13 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
     }
   }
-*/
+
   "OrthogonalPolygonDecomposer" can {
     import OrthogonalPolygonDecomposer.decompose
       import OrthogonalPolygonDecomposer.extractChords
       import OrthogonalPolygonPartitioner.extractCorners
     "decompose" should {
-/*
+
       "leave chordless polygons alone" in {
         val polygons: List[Polygon] = decompose(fixtures.simplePolygon)
 
@@ -161,26 +161,27 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         vChords.length shouldEqual 1
         hChords.length shouldEqual 1
       }
-*/
+
       "only extract choords that don't cross" in {
         val chords = extractChords(fixtures.complexChordedPolygon)
 
-        chords shouldEqual 2
+        chords.length shouldEqual 2
 
-        // val corners: List[Corner] = extractCorners(fixtures.complexChordedPolygon)
-        // val startsVertically: Boolean = corners.head.angle.abs != 90
+        val corners: List[Corner] = extractCorners(fixtures.complexChordedPolygon)
+        val startsVertically: Boolean = corners.head.angle.abs != 90
 
-        // val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-        // val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
+        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-        // val vChords: List[ExtendedCorner] = extractChords(hc, true)
-        // val hChords: List[ExtendedCorner] = extractChords(vc, false)
+        val vChords: List[ExtendedCorner] = extractChords(hc, true)
+        val hChords: List[ExtendedCorner] = extractChords(vc, false)
   
-        // vChords.length shouldEqual 2
-        // hChords.length shouldEqual 1
+        vChords.length shouldEqual 2
+        hChords.length shouldEqual 1
 
-        // hChords shouldEqual 2
-        // vChords shouldEqual chords
+        hChords.head shouldEqual ExtendedCorner(Point(2.0, 0.0), Point(1.0, 0.0), 180)
+        chords.contains(hChords.head) should be (false)
+        vChords shouldEqual chords
       }
     }
   }
