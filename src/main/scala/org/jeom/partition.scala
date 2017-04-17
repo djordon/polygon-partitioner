@@ -93,7 +93,7 @@ object OrthononalPolygonCornerExtender {
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
     val convexPoints: Set[Point] = corners
       .tail
-      .filter(_.isConvex)
+      .filter(_.isConcave)
       .map(_.point)
       .toSet
 
@@ -115,7 +115,7 @@ object OrthogonalPolygonDecomposer {
 
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
     val convexPoints: Set[Point] = corners
-      .filter(_.isConvex)
+      .filter(_.isConcave)
       .map(_.point)
       .toSet
 
@@ -192,7 +192,7 @@ object OrthogonalPolygonPartitioner {
     val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
       .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically=false)
 
-    vEdges ++ hEdges ++ corners.tail.filterNot(_.isConvex)
+    vEdges ++ hEdges ++ corners.tail.filterNot(_.isConcave)
   }
 
   private def cornerFolder(

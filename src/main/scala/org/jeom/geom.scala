@@ -44,7 +44,7 @@ case class Rectangle(upperLeft: Point, lowerRight: Point)
 
 
 trait CornerPoint {
-  def isConvex: Boolean
+  def isConcave: Boolean
   def point: Point
   def angle: Int
   def x: Double = point.x
@@ -55,7 +55,7 @@ trait CornerPoint {
 case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
   def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
   def point: Point = source
-  def isConvex: Boolean = true
+  def isConcave: Boolean = true
   def toLineString: LineString = {
     GeometryUtils.geometryFactory.createLineString(
       Array(new Coordinate(source.x, source.y),
@@ -65,20 +65,20 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 }
 
 
-case class Corner(point: Point, isConvex: Boolean, angle: Int) extends CornerPoint
+case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint
 
 
 object Corner {
   def apply(coords: List[Coordinate]) = new Corner(
     point = Point.apply(coords(1)),
-    isConvex = isConvexCorner(coords),
+    isConcave = isConcaveCorner(coords),
     angle = edgeDirection(coords.init)
   )
 
   def edgeDirection(vec: List[Coordinate]): Int = 
     Angle.toDegrees(Angle.angle(vec.head, vec.last)).toInt
 
-  def isConvexCorner(corner: List[Coordinate]): Boolean =
+  def isConcaveCorner(corner: List[Coordinate]): Boolean =
     Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
 

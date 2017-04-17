@@ -223,7 +223,7 @@ val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
 val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 val tree = buildIntervalTree(hc, false)
 
-val corner = corners.filter(c => c.isConvex && c.extendsVertically && c.point.x == -66.755807).head
+val corner = corners.filter(c => c.isConcave && c.extendsVertically && c.point.x == -66.755807).head
 val edge = extendCorner(corner, tree)
 
 val line1 = geometryFactory.createLineString(
