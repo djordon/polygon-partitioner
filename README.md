@@ -19,7 +19,10 @@
 9. Find the union of all rectangles formed this way. Call this polygon p*
 10. Find the difference between the OrthogonalPolygon and p*
 
-
+Chords
+1. Find the maximum matching of a bipartite graph. That is find the maximum independent edge set, the largest set of edges without common vertices.
+2. Use the endpoints of the maximum independent edge set to find a (minimum) vertex cover. A vertex cover of a graph is a set containing at least one vertex for each edge of the graph.
+3. The complement of a minimum vertex cover is a maximum independent set. An independent set is a set of vertices, no two which are adjacent. Note that the complement of any vertex cover is an independent set.
 
 Getting the upper left-hand points of each rectangle
 1. If you are an original boundary point and the edge that points to the next coordinate along the boundary goes to the right, then this coordinate is an upper left-hand coordinate of the rectangle

@@ -19,18 +19,20 @@ object OrthononalPolygonCornerExtender {
     def updateOpened(level: Double): TreeSet[Double] =
       if (level == currentLevel) opened else opened -- closed
 
+    def updateClosed(z: Double, zOpened: Boolean): Set[Double] =
+      if (closed.contains(z) && zOpened) closed - z else closed + z
+
     def extend(corner: Corner, updatedOpened: TreeSet[Double]): List[ExtendedCorner] =
       extendCorner(corner, updatedOpened) :: extendedCorners
 
     def sweep(z: Double, level: Double, cn: Corner): SweepContainer = {
-      val updatedOpened: TreeSet[Double] = updateOpened(level)
       val zOpened: Boolean = opened contains z
-
-      val newClosed: Set[Double] = if (closed.contains(z) && zOpened) closed - z else closed + z
+      val updatedOpened: TreeSet[Double] = updateOpened(level)
+      val updatedClosed: Set[Double] = updateClosed(z, zOpened)
 
       (level == currentLevel, zOpened) match {
         case (true, true) =>
-          SweepContainer(updatedOpened, extend(cn, updatedOpened - z), level, newClosed)
+          SweepContainer(updatedOpened, extend(cn, updatedOpened - z), level, updatedClosed)
         case (true, false) =>
           copy(opened=updatedOpened + z, extendedCorners=extend(cn, updatedOpened))
         case (false, true) =>
@@ -42,13 +44,13 @@ object OrthononalPolygonCornerExtender {
 
     def sweep(z: Double, level: Double): SweepContainer = {
       val zOpened: Boolean = opened contains z
-      val newClosed: Set[Double] = if (closed.contains(z) && zOpened) closed - z else closed + z
+      val updatedClosed: Set[Double] = updateClosed(z, zOpened)
 
-      (level == currentLevel, opened contains z) match {
-        case (true, true) => copy(closed=newClosed)
+      (level == currentLevel, zOpened) match {
+        case (true, true) => copy(closed=updatedClosed)
         case (true, false) => copy(opened=opened + z)
-        case (false, true) => SweepContainer(opened -- newClosed, extendedCorners, level)
-        case (false, false) => SweepContainer(opened -- closed + z, extendedCorners, level)
+        case (false, true) => SweepContainer(opened -- updatedClosed, extendedCorners, level)
+        case (false, false) => SweepContainer(opened -- updatedClosed, extendedCorners, level)
       }
     }
   }
@@ -89,9 +91,14 @@ object OrthononalPolygonCornerExtender {
   }
 
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
-    val convexPoints: Set[Point] = corners.tail.filter(_.isConvex).map(_.point).toSet
+    val convexPoints: Set[Point] = corners
+      .tail
+      .filter(_.isConvex)
+      .map(_.point)
+      .toSet
 
-    extendCorners(corners, extendVertically) filter { ec => convexPoints.contains(ec.dest) }
+    extendCorners(corners, extendVertically)
+      .filter { ec => convexPoints.contains(ec.dest) }
   }
 }
 
@@ -99,7 +106,7 @@ object OrthononalPolygonCornerExtender {
 object OrthogonalPolygonDecomposer {
   import GeometryUtils.IterablePolygon
 
-  def extractChordCorner(ec: ExtendedCorner): List[Corner] = ec match {
+  def extractChordCorners(ec: ExtendedCorner): List[Corner] = ec match {
     case ExtendedCorner(s, d, 0) => List(Corner(s, true, 0), Corner(d, true, 180))
     case ExtendedCorner(s, d, 180) => List(Corner(s, true, 180), Corner(d, true, 0))
     case ExtendedCorner(s, d, -90) => List(Corner(s, true, -90), Corner(d, true, 90))
@@ -125,7 +132,7 @@ object OrthogonalPolygonDecomposer {
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
-    val lChords: List[Corner] = vChords.flatMap(extractChordCorner)
+    val lChords: List[Corner] = vChords.flatMap(extractChordCorners)
     val hChords: List[ExtendedCorner] = extractChords(lChords ++ vc, false)
 
     vChords ++ hChords
