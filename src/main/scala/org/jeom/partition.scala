@@ -89,14 +89,14 @@ object OrthononalPolygonCornerExtender {
   }
 
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
-    val convexPoints: Set[Point] = corners
+    val concavePoints: Set[Point] = corners
       .tail
       .filter(_.isConcave)
       .map(_.point)
       .toSet
 
     extendCorners(corners, extendVertically)
-      .filter { ec => convexPoints.contains(ec.dest) }
+      .filter { ec => concavePoints.contains(ec.dest) }
   }
 }
 
@@ -112,14 +112,14 @@ object OrthogonalPolygonDecomposer {
   }
 
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
-    val convexPoints: Set[Point] = corners
+    val concavePoints: Set[Point] = corners
       .filter(_.isConcave)
       .map(_.point)
       .toSet
 
     OrthononalPolygonCornerExtender
       .extendCorners(corners, extendVertically)
-      .filter { ec => convexPoints.contains(ec.dest) }
+      .filter { ec => concavePoints.contains(ec.dest) }
   }
 
   def extractChords(pg: Polygon): List[ExtendedCorner] = {
@@ -205,7 +205,7 @@ object OrthogonalPolygonPartitioner {
     vEdges ++ hEdges ++ corners.tail.filterNot(_.isConcave)
   }
 
-  private def cornerFolder2(
+  private def cornerFolder(
       stacks: EndpointStacks,
       corner: CornerPoint): EndpointStacks = {
 
@@ -221,7 +221,7 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  private def cornerFolder(
+  private def cornerFolder2(
       stacks: Tuple3[List[Point], List[Point], List[Point]],
       corner: CornerPoint): Tuple3[List[Point], List[Point], List[Point]] = {
 
@@ -250,12 +250,11 @@ object OrthogonalPolygonPartitioner {
   }
 
   private def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
-    // val es: EndpointStacks = EndpointStacks()
-    val es: Tuple3[List[Point], List[Point], List[Point]] = (Nil, Nil, Nil)
+    val es: EndpointStacks = EndpointStacks()
   
-    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(es)(cornerFolder) //match {
-        // case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
-    // }
+    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(es)(cornerFolder) match {
+        case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
+    }
     val ul: Vector[Point] = upperLeft.toVector.sorted(PointOrderingX)
     val lr: Vector[Point] = lowerRight.toVector.sorted(PointOrderingY)
   
