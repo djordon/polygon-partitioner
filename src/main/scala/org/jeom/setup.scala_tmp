@@ -64,7 +64,7 @@ import GeometryUtils.IterablePolygon
 
 val tolerance = math.pow(2, -11)
 val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getCoordinates)
-val orthPolygon = OrthogonalPolygonBuilder.build(polygon, tolerance, 5, 3)
+val orthPolygon = OrthogonalPolygonBuilder.approximate(polygon, tolerance, 5, 3)
 // val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
 
 val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)

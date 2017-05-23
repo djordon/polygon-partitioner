@@ -10,60 +10,58 @@ import com.vividsolutions.jts.operation.polygonize.Polygonizer
 
 
 object OrthononalPolygonCornerExtender {
+
   case class SweepContainer(
-      opened: TreeSet[Double],
+      openedCoords: TreeSet[Double],
       extendedCorners: List[ExtendedCorner],
       currentLevel: Double = Double.NegativeInfinity,
-      closed: Set[Double] = Set()) {
+      closedCoords: Set[Double] = Set()) {
 
     def updateOpened(level: Double): TreeSet[Double] =
-      if (level == currentLevel) opened else opened -- closed
+      if (level == currentLevel) openedCoords else openedCoords -- closedCoords
 
-    def updateClosed(z: Double, zOpened: Boolean): Set[Double] =
-      if (closed.contains(z) && zOpened) closed - z else closed + z
+    def updateClosed(z: Double, contained: Boolean): Set[Double] =
+      if (closedCoords.contains(z) && contained) closedCoords - z else closedCoords + z
 
-    def extend(corner: Corner, updatedOpened: TreeSet[Double]): List[ExtendedCorner] =
-      extendCorner(corner, updatedOpened) :: extendedCorners
+    def updateCorners(cn: Corner, treeSet: TreeSet[Double]): List[ExtendedCorner] = {
+      val destination: Point = cn.angle match {
+        case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
+        case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
+        case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
+        case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
+      }
+
+      ExtendedCorner(cn.point, destination, cn.angle) :: extendedCorners
+    }
 
     def sweep(z: Double, level: Double, cn: Corner): SweepContainer = {
-      val zOpened: Boolean = opened contains z
-      val updatedOpened: TreeSet[Double] = updateOpened(level)
-      val updatedClosed: Set[Double] = updateClosed(z, zOpened)
+      val contained: Boolean = openedCoords contains z
+      val closed: Set[Double] = updateClosed(z, contained)
+      val opened: TreeSet[Double] = updateOpened(level)
 
-      (level == currentLevel, zOpened) match {
+      (level == currentLevel, contained) match {
         case (true, true) =>
-          SweepContainer(updatedOpened, extend(cn, updatedOpened - z), level, updatedClosed)
+          SweepContainer(opened, updateCorners(cn, opened - z), level, closed)
         case (true, false) =>
-          copy(opened=updatedOpened + z, extendedCorners=extend(cn, updatedOpened))
+          SweepContainer(opened + z, updateCorners(cn, opened), level, closedCoords)
         case (false, true) =>
-          SweepContainer(updatedOpened - z, extend(cn, updatedOpened - z), level)
+          SweepContainer(opened - z, updateCorners(cn, opened - z), level)
         case (false, false) =>
-          SweepContainer(updatedOpened + z, extend(cn, updatedOpened), level)
+          SweepContainer(opened + z, updateCorners(cn, opened), level)
       }
     }
 
     def sweep(z: Double, level: Double): SweepContainer = {
-      val zOpened: Boolean = opened contains z
-      val updatedClosed: Set[Double] = updateClosed(z, zOpened)
+      val contained: Boolean = openedCoords contains z
+      val closed: Set[Double] = updateClosed(z, contained)
 
-      (level == currentLevel, zOpened) match {
-        case (true, true) => copy(closed=updatedClosed)
-        case (true, false) => copy(opened=opened + z)
-        case (false, true) => SweepContainer(opened -- updatedClosed, extendedCorners, level)
-        case (false, false) => SweepContainer(opened -- updatedClosed, extendedCorners, level)
+      (level == currentLevel, contained) match {
+        case (true, true) => copy(closedCoords=closed)
+        case (true, false) => copy(openedCoords=openedCoords + z)
+        case (false, true) => SweepContainer(openedCoords -- closed, extendedCorners, level)
+        case (false, false) => SweepContainer(openedCoords -- closed, extendedCorners, level)
       }
     }
-  }
-
-  private def extendCorner(cn: Corner, treeSet: TreeSet[Double]): ExtendedCorner = {
-    val destination: Point = cn.angle match {
-      case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
-      case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
-      case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
-      case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
-    }
-
-    ExtendedCorner(cn.point, destination, cn.angle)
   }
 
   private def sweepFolder(extendVertically: Boolean)(
@@ -164,7 +162,19 @@ object OrthogonalPolygonDecomposer {
 
 
 object OrthogonalPolygonPartitioner {
+  import scala.language.implicitConversions
   import GeometryUtils.IterablePolygon
+
+  implicit def pointToListPoint(pt: Point): List[Point] = List(pt)
+
+  case class EndpointStacks(
+      upperLeft: List[Point] = Nil,
+      lowerLeft: List[Point] = Nil,
+      lowerRight: List[Point] = Nil) {
+
+    def prepend(ul: List[Point] = Nil, ll: List[Point] = Nil, lr: List[Point] = Nil) =
+      EndpointStacks(ul ::: upperLeft, ll ::: lowerLeft, lr ::: lowerRight)
+  }
 
   def extractCorners(polygon: Polygon): List[Corner] = {
     val boundary: List[Coordinate] = polygon.toList.tail
@@ -193,6 +203,22 @@ object OrthogonalPolygonPartitioner {
       .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically=false)
 
     vEdges ++ hEdges ++ corners.tail.filterNot(_.isConcave)
+  }
+
+  private def cornerFolder2(
+      stacks: EndpointStacks,
+      corner: CornerPoint): EndpointStacks = {
+
+    corner match {
+      case ExtendedCorner(source, dest, 0) => stacks.prepend(ll=source, lr=dest)
+      case ExtendedCorner(source, dest, 90) => stacks.prepend(ul=dest, lr=source)
+      case ExtendedCorner(source, dest, 180) => stacks.prepend(ul=dest, ll=dest)
+      case ExtendedCorner(source, dest, -90) => stacks.prepend(ul=source, ll=dest, lr=dest)
+      case Corner(source, false, 90) => stacks.prepend(ul=source)
+      case Corner(source, false, 180) => stacks.prepend(ll=source)
+      case Corner(source, false, -90) => stacks.prepend(lr=source)
+      case _ => stacks
+    }
   }
 
   private def cornerFolder(
@@ -224,9 +250,12 @@ object OrthogonalPolygonPartitioner {
   }
 
   private def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
-    val init: Tuple3[List[Point], List[Point], List[Point]] = (Nil, Nil, Nil)
+    // val es: EndpointStacks = EndpointStacks()
+    val es: Tuple3[List[Point], List[Point], List[Point]] = (Nil, Nil, Nil)
   
-    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(init)(cornerFolder)
+    val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(es)(cornerFolder) //match {
+        // case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
+    // }
     val ul: Vector[Point] = upperLeft.toVector.sorted(PointOrderingX)
     val lr: Vector[Point] = lowerRight.toVector.sorted(PointOrderingY)
   
