@@ -36,8 +36,8 @@ object OrthononalPolygonCornerExtender {
 
     def sweep(z: Double, level: Double, cn: Corner): SweepContainer = {
       val contained: Boolean = openedCoords contains z
-      val closed: Set[Double] = updateClosed(z, contained)
       val opened: TreeSet[Double] = updateOpened(level)
+      val closed: Set[Double] = updateClosed(z, contained)
 
       (level == currentLevel, contained) match {
         case (true, true) =>
@@ -59,7 +59,7 @@ object OrthononalPolygonCornerExtender {
         case (true, true) => copy(closedCoords=closed)
         case (true, false) => copy(openedCoords=openedCoords + z)
         case (false, true) => SweepContainer(openedCoords -- closed, extendedCorners, level)
-        case (false, false) => SweepContainer(openedCoords -- closed, extendedCorners, level)
+        case (false, false) => SweepContainer(openedCoords -- closed + z, extendedCorners, level)
       }
     }
   }
@@ -217,29 +217,6 @@ object OrthogonalPolygonPartitioner {
       case Corner(source, false, 90) => stacks.prepend(ul=source)
       case Corner(source, false, 180) => stacks.prepend(ll=source)
       case Corner(source, false, -90) => stacks.prepend(lr=source)
-      case _ => stacks
-    }
-  }
-
-  private def cornerFolder2(
-      stacks: Tuple3[List[Point], List[Point], List[Point]],
-      corner: CornerPoint): Tuple3[List[Point], List[Point], List[Point]] = {
-
-    corner match {
-      case ExtendedCorner(source, dest, 0) =>
-        (stacks._1, source :: stacks._2, dest :: stacks._3)
-      case ExtendedCorner(source, dest, 90) =>
-        (dest :: stacks._1, stacks._2, source :: stacks._3)
-      case ExtendedCorner(source, dest, 180) =>
-        (dest :: stacks._1, dest :: stacks._2, stacks._3)
-      case ExtendedCorner(source, dest, -90) =>
-        (source :: stacks._1, dest :: stacks._2, dest :: stacks._3)
-      case Corner(source, false, 90) =>
-        (source :: stacks._1, stacks._2, stacks._3)
-      case Corner(source, false, 180) =>
-        (stacks._1, source :: stacks._2, stacks._3)
-      case Corner(source, false, -90) =>
-        (stacks._1, stacks._2, source :: stacks._3)
       case _ => stacks
     }
   }

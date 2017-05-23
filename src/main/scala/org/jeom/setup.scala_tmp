@@ -67,7 +67,7 @@ val polygon = geometryFactory.createPolygon(ans(0).multipolygon.getBoundary.getC
 val orthPolygon = OrthogonalPolygonBuilder.approximate(polygon, tolerance, 5, 3)
 // val poly = OrthogonalPolygonBuilder.build(polygon, math.pow(2, -11), 8, 6)
 
-val ans = OrthogonalPolygonPartitioner.partition(orthPolygon)
+val ans = OrthogonalPolygonPartitioner.partitionSimple(orthPolygon)
 
 // val corners = OrthogonalPolygonPartitioner.extractCorners(orthPolygon)
 val startsVertically: Boolean = corners.head.angle.abs != 90
