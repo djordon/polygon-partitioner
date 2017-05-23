@@ -131,9 +131,9 @@ object OrthogonalPolygonDecomposer {
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
     val lChords: List[Corner] = vChords.flatMap(extractChordCorners)
-    val hChords: List[ExtendedCorner] = extractChords(lChords ++ vc, false)
+    val hChords: List[ExtendedCorner] = extractChords(lChords ::: vc, false)
 
-    vChords ++ hChords
+    vChords ::: hChords
   }
 
   def extractEdges(pg: Polygon): List[LineString] = {
@@ -147,7 +147,7 @@ object OrthogonalPolygonDecomposer {
 
   def decompose(pg: Polygon): List[Polygon] = {
     val chords: List[LineString] = extractChords(pg).map(_.toLineString)
-    val edges: List[LineString] = chords ++ extractEdges(pg)
+    val edges: List[LineString] = chords ::: extractEdges(pg)
 
     val polygonizer = new Polygonizer()
     polygonizer.add(edges.asJavaCollection)
@@ -200,9 +200,9 @@ object OrthogonalPolygonPartitioner {
       .extendCorners(hc, extendVertically=true)
 
     val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
-      .extendCorners(vEdges.flatMap(_.toListCorner) ++ vc, extendVertically=false)
+      .extendCorners(vEdges.flatMap(_.toListCorner) ::: vc, extendVertically=false)
 
-    vEdges ++ hEdges ++ corners.tail.filterNot(_.isConcave)
+    vEdges ::: hEdges ::: corners.tail.filterNot(_.isConcave)
   }
 
   private def cornerFolder(
