@@ -35,6 +35,6 @@ license <https://github.com/djordon/polygon-partitioner/blob/master/LICENSE.txt>
 .. |Coverage Status| image:: https://coveralls.io/repos/djordon/polygon-partitioner/badge.svg?branch=master
    :target: https://coveralls.io/r/djordon/polygon-partitioner?branch=master
 
-.. |license| image:: https://img.shields.io/pypi/l/polygon-partitioner.svg
+.. |license| image:: https://img.shields.io/github/license/mashape/apistatus.svg
     :alt: MIT License
     :target: https://opensource.org/licenses/MIT
