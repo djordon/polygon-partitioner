@@ -2,12 +2,12 @@ lazy val projectSettings = Seq(
   organization := "org",
   name := "partitioner",
   version := "0.1.0-SNAPSHOT",
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.2",
 
   fork in run := true,
 
-  scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  // scalacOptions ++= Seq("-target:jvm-1.8", "-feature"),
+  // javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
 
   mainClass in (Compile, run) := Some("org.partitioner.OrthogonalPolygonPartitioner"),
   mainClass in assembly := Some("orm.partitioner.OrthogonalPolygonPartitioner"),
@@ -16,7 +16,7 @@ lazy val projectSettings = Seq(
 
   libraryDependencies ++= Seq(
     "com.vividsolutions" % "jts-core" % "1.14.0",
-    "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   ),
 
   sourcesInBase := false,
