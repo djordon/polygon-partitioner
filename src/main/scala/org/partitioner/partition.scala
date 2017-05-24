@@ -1,4 +1,4 @@
-package org.jeom
+package org.partitioner
 
 import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._

@@ -1,4 +1,4 @@
-package org.jeom
+package org.partitioner
 
 import scala.collection.JavaConverters._
 

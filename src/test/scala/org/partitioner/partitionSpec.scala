@@ -1,4 +1,4 @@
-package org.jeom
+package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
