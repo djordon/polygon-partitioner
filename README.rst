@@ -25,7 +25,7 @@ Bugs and issues
 Copyright and license
 ---------------------
 
-Code and documentation Copyright 2014-2016 Daniel Jordon. Code released
+Code and documentation Copyright 2017 Daniel Jordon. Code released
 under the `MIT
 license <https://github.com/djordon/polygon-partitioner/blob/master/LICENSE.txt>`__.
 
