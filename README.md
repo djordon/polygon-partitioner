@@ -1,31 +1,40 @@
-- Use an IndexedSeq to sort the coordinates by x and y.
-- import scala.collection.Searching.search is an implicit class on things that are Seq like
-- Use an Ordering to sort the IndexedSeq. Do this twice, once for x and once for y
+Polygon-partitioner
+===================
 
-- Searching should specify whether the searched point coincides with a hole
-- search method returns either a Found or an InsertionPoint. 
-  - recieving a found implies the indexed Seq
+|Build Status| |Coverage Status| |license|
 
+For partitioning polygons into disjoint rectangles.
 
 
-1. Take boundary and simplify a lot
-2. Densify the simplified boundary
-3. Filter points that touch the boundary (shouldn't be any)
-4. Take the new densified points
-5. Extend each point in the 4 natural basis directions
-6. Check to see if the intersection of the projected line and the original polygon is 1 dimensional
-7. If at least two of the extended lines have only trivial intersection with the boundary, then keep this point and the extended lines.
-8. Form the rectangle from these extended lines
-9. Find the union of all rectangles formed this way. Call this polygon p*
-10. Find the difference between the OrthogonalPolygon and p*
+Documentation
+-------------
 
-Chords
-1. Find the maximum matching of a bipartite graph. That is find the maximum independent edge set, the largest set of edges without common vertices.
-2. Use the endpoints of the maximum independent edge set to find a (minimum) vertex cover. A vertex cover of a graph is a set containing at least one vertex for each edge of the graph.
-3. The complement of a minimum vertex cover is a maximum independent set. An independent set is a set of vertices, no two which are adjacent. Note that the complement of any vertex cover is an independent set.
 
-Getting the upper left-hand points of each rectangle
-1. If you are an original boundary point and the edge that points to the next coordinate along the boundary goes to the right, then this coordinate is an upper left-hand coordinate of the rectangle
-2. For the "new" coordinates created from extending convex boundary points look at the following:
-  - If you are a line that was extended upward, then the top point is an upper left-hand point
-  - If you are a line that was extended leftward, the the point on the left is an upper left-hand point.
+Features
+--------
+
+
+Installation
+------------
+
+
+Bugs and issues
+---------------
+
+
+Copyright and license
+---------------------
+
+Code and documentation Copyright 2014-2016 Daniel Jordon. Code released
+under the `MIT
+license <https://github.com/djordon/polygon-partitioner/blob/master/LICENSE.txt>`__.
+
+.. |Build Status| image:: https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master
+   :target: https://travis-ci.org/djordon/polygon-partitioner
+
+.. |Coverage Status| image:: https://coveralls.io/repos/djordon/polygon-partitioner/badge.svg?branch=master
+   :target: https://coveralls.io/r/djordon/polygon-partitioner?branch=master
+
+.. |license| image:: https://img.shields.io/pypi/l/polygon-partitioner.svg
+    :alt: MIT License
+    :target: https://opensource.org/licenses/MIT
