@@ -3,7 +3,7 @@ Polygon-partitioner
 
 |Build Status| |Coverage Status| |license|
 
-For partitioning polygons into disjoint rectangles.
+For partitioning polygons into disjoint rectangles. Because you never know when you need to partition some polygons.
 
 
 Documentation
