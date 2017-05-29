@@ -56,6 +56,9 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
   def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
   def point: Point = source
   def isConcave: Boolean = true
+  def swap: ExtendedCorner = {
+    ExtendedCorner(dest, source, if (angle.abs == 90) -angle else (angle + 180) % 360)
+  }
   def toLineString: LineString = {
     GeometryUtils.geometryFactory.createLineString(
       Array(new Coordinate(source.x, source.y),
@@ -65,7 +68,9 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 }
 
 
-case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint
+case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint {
+  def z(implicit extendVertically: Boolean): Double = if (extendVertically) y else x
+}
 
 
 object Corner {

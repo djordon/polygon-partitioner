@@ -17,15 +17,25 @@ object OrthogonalPolygonDecomposer {
     case ExtendedCorner(s, d, 90) => List(Corner(s, true, 90), Corner(d, true, -90))
   }
 
+  private def uniqueExtendedCorners(
+      set: Set[ExtendedCorner], ec: ExtendedCorner): Set[ExtendedCorner] = {
+
+    if (set contains ec.swap) set else set + ec
+  }
+
   def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
     val concavePoints: Set[Point] = corners
       .filter(_.isConcave)
       .map(_.point)
       .toSet
 
+    val init: Set[ExtendedCorner] = Set[ExtendedCorner]()
+
     OrthononalPolygonCornerExtender
-      .extendCorners(corners, extendVertically)
+      .extendCorners(corners)(extendVertically)
       .filter { ec => concavePoints.contains(ec.dest) }
+      .foldLeft(init)(uniqueExtendedCorners)
+      .toList
   }
 
   def extractChords(pg: Polygon): List[ExtendedCorner] = {
@@ -38,6 +48,7 @@ object OrthogonalPolygonDecomposer {
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
     val lChords: List[Corner] = vChords.flatMap(extractChordCorners)
     val hChords: List[ExtendedCorner] = extractChords(lChords ::: vc, false)
+    // val hChords: List[ExtendedCorner] = extractChords(vc, false)
 
     vChords ::: hChords
   }
