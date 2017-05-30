@@ -53,11 +53,13 @@ trait CornerPoint {
 
 
 case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
-  def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
-  def point: Point = source
+  lazy val antiAngle = (angle.abs == 90) -angle else (angle + 180) % 360)
+
   def isConcave: Boolean = true
-  def swap: ExtendedCorner = {
-    ExtendedCorner(dest, source, if (angle.abs == 90) -angle else (angle + 180) % 360)
+  def point: Point = source
+  def swap: ExtendedCorner = ExtendedCorner(dest, source, antiAngle)
+  def toListCorner: List[Corner] = {
+    List(Corner(source, true, angle), Corner(dest, false, antiAngle))
   }
   def toLineString: LineString = {
     GeometryUtils.geometryFactory.createLineString(

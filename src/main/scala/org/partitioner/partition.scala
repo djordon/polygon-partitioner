@@ -1,5 +1,6 @@
 package org.partitioner
 
+import scala.annotation.switch
 import scala.collection.immutable.TreeSet
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -18,7 +19,7 @@ object OrthononalPolygonCornerExtender {
 
   def updateCorners(treeSet: TreeSet[Double])(cn: Corner): ExtendedCorner = {
 
-    val destination: Point = cn.angle match {
+    val destination: Point = (cn.angle: @switch) match {
       case 0 => Point((treeSet - cn.x).from(cn.x).firstKey, cn.y)
       case 180 => Point((treeSet - cn.x).to(cn.x).lastKey, cn.y)
       case -90 => Point(cn.x, (treeSet - cn.y).to(cn.y).lastKey)
