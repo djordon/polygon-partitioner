@@ -39,7 +39,7 @@ object OrthogonalPolygonDecomposer {
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
-    val lChords: List[Corner] = vChords.flatMap(_.toListCorner(true))
+    val lChords: List[Corner] = vChords.flatMap(_.toListCorner)
     val hChords: List[ExtendedCorner] = extractChords(lChords ::: vc, false)
 
     vChords ::: hChords

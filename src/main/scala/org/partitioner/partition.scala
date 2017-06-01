@@ -115,7 +115,7 @@ object OrthogonalPolygonPartitioner {
       .extendCorners(hc)(extendVertically=true)
 
     val hEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
-      .extendCorners(vEdges.flatMap(_.toListCorner()) ::: vc)(extendVertically=false)
+      .extendCorners(vEdges.flatMap(_.toListCorner) ::: vc)(extendVertically=false)
 
     vEdges ::: hEdges ::: corners.tail.filterNot(_.isConcave)
   }
