@@ -15,7 +15,7 @@ object OrthogonalPolygonCornerExtender {
       openedCoords: TreeSet[Double] = TreeSet[Double](),
       extendedCorners: List[ExtendedCorner] = Nil)
 
-  def updateCorners(treeSet: TreeSet[Double])(cn: Corner): ExtendedCorner = {
+  def extendCorner(treeSet: TreeSet[Double])(cn: Corner): ExtendedCorner = {
 
     val destination: Point = (cn.angle: @switch) match {
       case 0 => Point((treeSet - cn.x).from(cn.x).firstKey, cn.y)
@@ -57,7 +57,7 @@ object OrthogonalPolygonCornerExtender {
 
     val extended: List[ExtendedCorner] = actions
       .getOrElse("toExtend", Nil)
-      .map(updateCorners(opened))
+      .map(extendCorner(opened))
 
     LineContainer(closed, extended ::: container.extendedCorners)
   }
