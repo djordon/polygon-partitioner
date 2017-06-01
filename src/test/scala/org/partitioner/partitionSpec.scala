@@ -13,7 +13,7 @@ import scala.language.reflectiveCalls
 class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   import GeometryUtils.IterablePolygon
 
-  "OrthononalPolygonCornerExtender" can {
+  "OrthogonalPolygonCornerExtender" can {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
         val corners: List[Corner] = OrthogonalPolygonPartitioner
@@ -22,7 +22,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         val startsVertically: Boolean = corners.head.angle.abs != 90
         val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-        val vEdges: Set[ExtendedCorner] = OrthononalPolygonCornerExtender
+        val vEdges: Set[ExtendedCorner] = OrthogonalPolygonCornerExtender
           .extendCorners(vc)(extendVertically=false).toSet
 
         val expectedEdges: Set[ExtendedCorner] = Set(

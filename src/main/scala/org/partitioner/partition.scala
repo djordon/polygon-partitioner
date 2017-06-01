@@ -7,7 +7,7 @@ import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 import com.vividsolutions.jts.geom.{Polygon, Coordinate}
 
 
-object OrthononalPolygonCornerExtender {
+object OrthogonalPolygonCornerExtender {
 
   private val emptyLines: List[ExtendedCorner] = Nil
 
@@ -37,7 +37,7 @@ object OrthononalPolygonCornerExtender {
       .toList
       .groupBy(cn => if (opened.contains(cn.z)) "toClose" else "toOpen")
 
-    val toExtend: List[Corner] = corners filter { cn => 
+    val toExtend: List[Corner] = corners filter { cn =>
       (extendVertically == (cn.angle.abs == 90)) && cn.isConcave
     }
 
@@ -49,10 +49,10 @@ object OrthononalPolygonCornerExtender {
 
     val actions = setActions(corners, container.openedCoords)
 
-    val opened: TreeSet[Double] = container.openedCoords ++ 
+    val opened: TreeSet[Double] = container.openedCoords ++
       actions.getOrElse("toOpen", Nil).map(_.z)
 
-    val closed: TreeSet[Double] = opened -- 
+    val closed: TreeSet[Double] = opened --
       actions.getOrElse("toClose", Nil).map(_.z)
 
     val extended: List[ExtendedCorner] = actions
@@ -111,10 +111,10 @@ object OrthogonalPolygonPartitioner {
     val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-    val vEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
+    val vEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
       .extendCorners(hc)(extendVertically=true)
 
-    val hEdges: List[ExtendedCorner] = OrthononalPolygonCornerExtender
+    val hEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
       .extendCorners(vEdges.flatMap(_.toListCorner()) ::: vc)(extendVertically=false)
 
     vEdges ::: hEdges ::: corners.tail.filterNot(_.isConcave)
@@ -136,20 +136,20 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  private def extractIndex(sr: SearchResult): Int = sr match { 
+  private def extractIndex(sr: SearchResult): Int = sr match {
     case Found(i) => i + 1
     case InsertionPoint(i) => i
   }
 
   private def extractRectangles(cornersPoints: List[CornerPoint]): List[Rectangle] = {
     val es: EndpointStacks = EndpointStacks()
-  
+
     val (upperLeft, lowerLeft, lowerRight) = cornersPoints.foldLeft(es)(cornerFolder) match {
         case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
     }
     val ul: Vector[Point] = upperLeft.toVector.sorted(PointOrderingX)
     val lr: Vector[Point] = lowerRight.toVector.sorted(PointOrderingY)
-  
+
     lowerLeft map { p =>
       val i1 = extractIndex(ul.search(p)(PointOrderingX))
       val i2 = extractIndex(lr.search(p)(PointOrderingY))

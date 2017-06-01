@@ -24,7 +24,7 @@ object OrthogonalPolygonDecomposer {
 
     val init: Set[ExtendedCorner] = Set[ExtendedCorner]()
 
-    OrthononalPolygonCornerExtender
+    OrthogonalPolygonCornerExtender
       .extendCorners(corners)(extendVertically)
       .filter { ec => concavePoints.contains(ec.dest) }
       .foldLeft(init)(uniqueExtendedCorners)
