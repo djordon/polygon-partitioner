@@ -2,8 +2,6 @@ package org.partitioner
 
 import scala.annotation.switch
 import scala.collection.immutable.TreeSet
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
 import com.vividsolutions.jts.geom.{Polygon, Coordinate}

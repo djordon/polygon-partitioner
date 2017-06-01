@@ -1,7 +1,5 @@
 package org.partitioner
 
-import scala.collection.JavaConversions._
-
 import com.vividsolutions.jts.algorithm.Angle
 import com.vividsolutions.jts.geom.{Coordinate, LineString}
 
@@ -53,7 +51,7 @@ trait CornerPoint {
 
 
 case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
-  lazy val antiAngle = (angle.abs == 90) -angle else (angle + 180) % 360)
+  lazy val antiAngle = if (angle.abs == 90) -angle else (angle + 180) % 360
 
   def isConcave: Boolean = true
   def point: Point = source
