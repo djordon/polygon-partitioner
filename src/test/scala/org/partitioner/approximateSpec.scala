@@ -75,6 +75,22 @@ trait PolygonFixtures {
         | 2 1, 3 1, 3 0, 2 0, 2 -1, 1.5 -1,
         | 1.5 -0.5, 1 -0.5, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
+
+    val complexChordedPolygon2: Polygon = wktReader
+      .read("""
+        |Polygon ((0 2, 0 4, 1 4, 1 6, 3 6, 3 7,
+        | 5 7, 5 6, 6 6, 6 5, 7 5, 7 3, 6 3,
+        | 6 1, 4 1, 4 0, 2 0, 2 1, 1 1, 1 2,
+        | 0 2))""".stripMargin.replaceAll("\n", " "))
+      .asInstanceOf[Polygon]
+
+    val complexChordedPolygon3: Polygon = wktReader
+      .read("""
+        |Polygon ((0 2, 0 3, 1 3, 1 6, 4 6, 4 7,
+        | 5 7, 5 6, 6 6, 6 5, 7 5, 7 4, 6 4,
+        | 6 1, 3 1, 3 0, 2 0, 2 1, 1 1, 1 2,
+        | 0 2))""".stripMargin.replaceAll("\n", " "))
+      .asInstanceOf[Polygon]
   }
 }
 

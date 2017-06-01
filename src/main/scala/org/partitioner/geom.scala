@@ -1,7 +1,5 @@
 package org.partitioner
 
-import scala.collection.JavaConversions._
-
 import com.vividsolutions.jts.algorithm.Angle
 import com.vividsolutions.jts.geom.{Coordinate, LineString}
 
@@ -53,9 +51,14 @@ trait CornerPoint {
 
 
 case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
-  def toListCorner: List[Corner] = List(Corner(source, true, angle), Corner(dest, false, 0))
-  def point: Point = source
+  lazy val oppositeAngle = ((angle + 270) % 360) - 90
+
   def isConcave: Boolean = true
+  def point: Point = source
+  def swap: ExtendedCorner = ExtendedCorner(dest, source, oppositeAngle)
+  def toListCorner(destConcave: Boolean = false): List[Corner] = {
+    List(Corner(source, true, angle), Corner(dest, destConcave, oppositeAngle))
+  }
   def toLineString: LineString = {
     GeometryUtils.geometryFactory.createLineString(
       Array(new Coordinate(source.x, source.y),
@@ -65,7 +68,9 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 }
 
 
-case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint
+case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint {
+  def z(implicit extendVertically: Boolean): Double = if (extendVertically) y else x
+}
 
 
 object Corner {

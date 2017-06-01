@@ -2,10 +2,8 @@ package org.partitioner
 
 import scala.collection.JavaConverters._
 
-import com.vividsolutions.jts.algorithm.Angle
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.triangulate.DelaunayTriangulationBuilder
 import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LineString}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
