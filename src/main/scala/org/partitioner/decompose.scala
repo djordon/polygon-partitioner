@@ -10,13 +10,6 @@ import com.vividsolutions.jts.operation.polygonize.Polygonizer
 object OrthogonalPolygonDecomposer {
   import GeometryUtils.IterablePolygon
 
-  def extractChordCorners(ec: ExtendedCorner): List[Corner] = ec match {
-    case ExtendedCorner(s, d, 0) => List(Corner(s, true, 0), Corner(d, true, 180))
-    case ExtendedCorner(s, d, 180) => List(Corner(s, true, 180), Corner(d, true, 0))
-    case ExtendedCorner(s, d, -90) => List(Corner(s, true, -90), Corner(d, true, 90))
-    case ExtendedCorner(s, d, 90) => List(Corner(s, true, 90), Corner(d, true, -90))
-  }
-
   private def uniqueExtendedCorners(
       set: Set[ExtendedCorner], ec: ExtendedCorner): Set[ExtendedCorner] = {
 
@@ -46,9 +39,8 @@ object OrthogonalPolygonDecomposer {
     val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
-    val lChords: List[Corner] = vChords.flatMap(extractChordCorners)
+    val lChords: List[Corner] = vChords.flatMap(_.toListCorner(true))
     val hChords: List[ExtendedCorner] = extractChords(lChords ::: vc, false)
-    // val hChords: List[ExtendedCorner] = extractChords(vc, false)
 
     vChords ::: hChords
   }
