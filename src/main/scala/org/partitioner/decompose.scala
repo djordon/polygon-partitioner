@@ -34,8 +34,8 @@ object OrthogonalPolygonDecomposer {
 
   def extractChords(pg: Polygon): List[ExtendedCorner] = {
     val corners = OrthogonalPolygonPartitioner.extractCorners(pg)
-    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertical = false))
-    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertical = true))
+    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertically = false))
+    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertically = true))
 
     val vChords: List[ExtendedCorner] = extractChords(hc, true)
     val lChords: List[Corner] = vChords.flatMap(_.toListCorner)
