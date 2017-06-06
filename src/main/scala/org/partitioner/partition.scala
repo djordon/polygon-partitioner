@@ -91,8 +91,7 @@ object OrthogonalPolygonPartitioner {
       EndpointStacks(ul ::: upperLeft, ll ::: lowerLeft, lr ::: lowerRight)
   }
 
-  def extractCorners(polygon: Polygon): List[Corner] = {
-    val boundary: List[Coordinate] = polygon.toList.tail
+  def makeCorners(boundary: List[Coordinate]): List[Corner] = {
     val extended: List[Coordinate] = Stream
       .continually(boundary)
       .flatten
@@ -105,11 +104,21 @@ object OrthogonalPolygonPartitioner {
       .toList
   }
 
-  def makeRectangleCorners(corners: List[Corner]): List[CornerPoint] = {
-    val startsVertically: Boolean = corners.head.angle.abs != 90
+  def extractCorners(polygon: Polygon): List[List[Corner]] = {
+    val boundary: List[Coordinate] = polygon.toList.tail
+    val holes: List[List[Coordinate]] = polygon.getHoles.map(_.toList.tail.reverse)
 
-    val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-    val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
+    (boundary :: holes).map(makeCorners)
+  }
+
+  def orderCorners(corners: List[Corner], vertical: Boolean): List[Corner] = {
+    val startsVertically: Boolean = corners.head.angle.abs != 90
+    if (startsVertically == vertical) corners.init else corners.tail
+  }
+
+  def makeRectangleCorners(corners: List[List[Corner]]): List[CornerPoint] = {
+    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertical = false))
+    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertical = true))
 
     val vEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
       .extendCorners(hc)(extendVertically=true)
@@ -117,7 +126,7 @@ object OrthogonalPolygonPartitioner {
     val hEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
       .extendCorners(vEdges.flatMap(_.toListCorner) ::: vc)(extendVertically=false)
 
-    vEdges ::: hEdges ::: corners.tail.filterNot(_.isConcave)
+    vEdges ::: hEdges ::: corners.flatten.tail.filterNot(_.isConcave)
   }
 
   private def cornerFolder(
