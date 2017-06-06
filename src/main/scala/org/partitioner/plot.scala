@@ -42,31 +42,34 @@ object PolygonPlotter {
     )
   }
 
-  def polygonPlotter(polygon: Polygon): Scatter = {
-    val points: List[Point] = polygon.toList.map(p => Point(p.x, p.y))
+  def polygonPlotter(polygon: Polygon): Seq[Scatter] = {
+    val interior: List[List[Point]] = polygon.getHoles.map(_.toList.map(Point.apply))
+    val exterior: List[Point] = polygon.toList.map(Point.apply)
 
-    scatterLines(
-      points=points,
+    val scatterPartial = scatterLines(
+      _: List[Point],
       markerColor=Color.RGBA(255, 153, 51, 0.8),
       markerLine=Line(color = Color.RGBA(255, 153, 51, 0.8), width = 1.0)
     )
+
+    (exterior :: interior).map(scatterPartial)
   }
 
   def quickPlot(
-      polygon: Polygon,
+      polygons: List[Polygon],
       innerLines: List[ExtendedCorner] = Nil,
       diagLines: List[Rectangle] = Nil,
       plotName: String = "quick",
       fileName: String = "quick.html"): File = {
 
-    val scatters: Seq[Scatter] = Seq(polygonPlotter(polygon)) ++
+    val scatters: Seq[Scatter] = polygons.flatMap(polygonPlotter) ++
       innerLines.map(extendedCornerPlotter) ++
       diagLines.map(rectanglePlotter)
 
     val layout = Layout(
       title = plotName,
-      xaxis = Axis(showgrid=false),
-      yaxis = Axis(showgrid=false),
+      xaxis = Axis(showgrid=true),
+      yaxis = Axis(showgrid=true),
       width = 600,
       height = 600
     )
