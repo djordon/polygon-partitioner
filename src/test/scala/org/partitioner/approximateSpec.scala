@@ -7,7 +7,6 @@ import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
-import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
 
 
