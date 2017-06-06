@@ -38,7 +38,10 @@ object CornerOrderingY extends Ordering[CornerPoint] {
 }
 
 
-case class Rectangle(upperLeft: Point, lowerRight: Point)
+case class Rectangle(upperLeft: Point, lowerRight: Point) {
+  def upperRight: Point = Point(lowerRight.x, upperLeft.y)
+  def lowerLeft: Point = Point(upperLeft.x, lowerRight.y)
+}
 
 
 trait CornerPoint {

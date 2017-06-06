@@ -3,7 +3,7 @@ package org.partitioner
 import java.io.File
 
 import com.vividsolutions.jts.geom.Polygon
-import plotly.element.{Color, Line, Marker, ScatterMode}
+import plotly.element.{Color, Line, Marker, ScatterMode, Fill}
 import plotly.layout.{Axis, Layout}
 import plotly.{Plotly, Scatter}
 
@@ -21,27 +21,41 @@ object PolygonPlotter {
     )
   }
 
-  def extendedCornerPlotter(line: ExtendedCorner): Scatter = {
+  def extendedCornerPlotter(line: ExtendedCorner): List[Scatter] = {
     val points: List[Point] = List(line.source, line.dest)
 
-    scatterLines(
+    List(scatterLines(
       points=points,
       markerColor=Color.RGBA(152, 0, 0, 0.8),
       markerLine=Line(color = Color.RGBA(30, 0, 0, 1.0), width = 1.0)
-    )
+    ))
   }
 
-  def rectanglePlotter(rectangle: Rectangle): Scatter = {
-    val points: List[Point] = List(rectangle.upperLeft, rectangle.lowerRight)
+  def rectanglePlotter(rectangle: Rectangle): List[Scatter] = {
 
-    scatterLines(
-      points=points,
-      markerColor=Color.RGBA(0, 152, 0, 0.8),
-      markerLine=Line(color = Color.RGBA(0, 30, 0, 1.0), width = 1.0)
-    )
+    val top: List[Point] = List(rectangle.upperLeft, rectangle.upperRight)
+    val bot: List[Point] = List(rectangle.lowerLeft, rectangle.lowerRight)
+
+    val blueShade: Int = (Math.random() * 200).toInt + 55
+    val blue: Color = Color.RGBA(0, 15, blueShade, 0.7)
+    val marker: Marker = Marker(color = blue, line = Line(color = blue, width = 1.0))
+
+    Scatter(
+      values = bot.map(_.x),
+      secondValues = bot.map(_.y),
+      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
+      marker = marker
+    ) ::
+    Scatter(
+      values = top.map(_.x),
+      secondValues = top.map(_.y),
+      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
+      marker = marker,
+      fill = Fill.ToNextY
+    ) :: Nil
   }
 
-  def polygonPlotter(polygon: Polygon): Seq[Scatter] = {
+  def polygonPlotter(polygon: Polygon): List[Scatter] = {
     val interior: List[List[Point]] = polygon.getHoles.map(_.toList.map(Point.apply))
     val exterior: List[Point] = polygon.toList.map(Point.apply)
 
@@ -61,9 +75,9 @@ object PolygonPlotter {
       plotName: String = "quick",
       fileName: String = "quick.html"): File = {
 
-    val scatters: Seq[Scatter] = polygons.flatMap(polygonPlotter) ++
-      innerLines.map(extendedCornerPlotter) ++
-      diagLines.map(rectanglePlotter)
+    val scatters: List[Scatter] = polygons.flatMap(polygonPlotter) ++
+      innerLines.flatMap(extendedCornerPlotter) ++
+      diagLines.flatMap(rectanglePlotter)
 
     val layout = Layout(
       title = plotName,
