@@ -111,14 +111,14 @@ object OrthogonalPolygonPartitioner {
     (boundary :: holes).map(makeCorners)
   }
 
-  def orderCorners(corners: List[Corner], vertically: Boolean): List[Corner] = {
+  def orderCorners(corners: List[Corner], vertical: Boolean): List[Corner] = {
     val startsVertically: Boolean = corners.head.angle.abs != 90
-    if (startsVertically == vertically) corners.init else corners.tail
+    if (startsVertically == vertical) corners.init else corners.tail
   }
 
   def makeRectangleCorners(corners: List[List[Corner]]): List[CornerPoint] = {
-    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertically = false))
-    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertically = true))
+    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertical = false))
+    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertical = true))
 
     val vEdges: List[ExtendedCorner] = OrthogonalPolygonCornerExtender
       .extendCorners(hc)(extendVertically=true)
