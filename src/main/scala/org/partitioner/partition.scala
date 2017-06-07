@@ -166,10 +166,10 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  def partitionSimple: Polygon => List[Rectangle] =
+  def partition: Polygon => List[Rectangle] =
     extractCorners _ andThen makeRectangleCorners _ andThen extractRectangles _
 
-  def partition(pg: Polygon): List[Rectangle] = OrthogonalPolygonDecomposer
+  def partitionChorded(pg: Polygon): List[Rectangle] = OrthogonalPolygonDecomposer
     .decompose(pg)
-    .flatMap(partitionSimple)
+    .flatMap(partition)
 }
