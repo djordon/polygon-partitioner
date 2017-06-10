@@ -146,12 +146,20 @@ object OrthogonalPolygonPartitioner {
     val vEdges: List[CornerPoint] = OrthogonalPolygonCornerExtender
       .extendCorners(hc)(extendVertically=true)
 
-    val vCorners: List[Corner] = vEdges.flatMap(_.toListCorner).map(_.asInstanceOf[Corner])
-
     val hEdges: List[CornerPoint] = OrthogonalPolygonCornerExtender
-      .extendCorners(vCorners ::: vc)(extendVertically=false)
+      .extendCorners(vc)(extendVertically=false)
 
-    vEdges ::: hEdges ::: corners.flatten.tail.filterNot(_.isConcave)
+    val chords: List[Chord] = (vEdges ::: hEdges) collect { case c: Chord => c }
+    val chordPoints: Set[Point] = chords
+      .flatMap(_.toListCorner)
+      .map(_.point)
+      .toSet
+
+    val extendedCorners: List[ExtendedCorner] = (vEdges ::: hEdges) collect {
+      case ec: ExtendedCorner if !chordPoints.contains(ec.source) => ec
+    }
+
+    chords ::: extendedCorners ::: corners.flatten.tail.filterNot(_.isConcave)
   }
 
   private def cornerFolder(
