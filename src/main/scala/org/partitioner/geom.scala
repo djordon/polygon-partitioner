@@ -98,6 +98,12 @@ case class Chord(source: Corner, dest: Corner) extends CornerPoint {
   def point: Point = source.point
   def angle: Int = source.angle
   def toListCorner: List[Corner] = List(source, dest)
+  def toLineString: LineString = {
+    GeometryUtils.geometryFactory.createLineString(
+      Array(new Coordinate(source.x, source.y),
+        new Coordinate(dest.x, dest.y))
+    )
+  }
 }
 
 case class Vec(coord: Coordinate, angle: Double)

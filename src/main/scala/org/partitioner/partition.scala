@@ -173,7 +173,7 @@ object OrthogonalPolygonPartitioner {
       case Chord(Corner(s, _, 180), Corner(d, _, 90)) => stacks.prepend(ul=d)
       case Chord(Corner(s, _, 180), Corner(d, _, 0)) => stacks.prepend(ll=d)
       case Chord(Corner(s, _, 0), Corner(d, _, 180)) => stacks.prepend(ll=s)
-      case Chord(Corner(s, _, 0), Corner(d, _, 90)) => stacks.prepend(ll=s, lr=d)
+      case Chord(Corner(s, _, 0), Corner(d, _, -90)) => stacks.prepend(ll=s, lr=d)
       case _ => stacks
     }
   }

@@ -10,6 +10,7 @@ import com.vividsolutions.jts.operation.polygonize.Polygonizer
 object OrthogonalPolygonDecomposer {
   import GeometryUtils.IterablePolygon
   import OrthogonalPolygonPartitioner.orderCorners
+  import OrthogonalPolygonCornerExtender.extendCorners
 
   private def uniqueExtendedCorners(
       set: Set[ExtendedCorner], ec: ExtendedCorner): Set[ExtendedCorner] = {
@@ -25,21 +26,25 @@ object OrthogonalPolygonDecomposer {
 
     val init: Set[ExtendedCorner] = Set[ExtendedCorner]()
 
-    OrthogonalPolygonCornerExtender
-      .extendCorners(corners)(extendVertically)
-      .filter { ec => concavePoints.contains(ec.dest) }
-      .foldLeft(init)(uniqueExtendedCorners)
-      .toList
+//    OrthogonalPolygonCornerExtender
+//      .extendCorners(corners)(extendVertically)
+//      .filter { ec => concavePoints.contains(ec.dest) }
+//      .foldLeft(init)(uniqueExtendedCorners)
+    init.toList
   }
 
-  def extractChords(pg: Polygon): List[ExtendedCorner] = {
+  def extractChords(pg: Polygon): List[Chord] = {
     val corners = OrthogonalPolygonPartitioner.extractCorners(pg)
     val hc: List[Corner] = corners.flatMap(orderCorners(_, vertically = false))
     val vc: List[Corner] = corners.flatMap(orderCorners(_, vertically = true))
 
-    val vChords: List[ExtendedCorner] = extractChords(hc, true)
+    val vChords: List[Chord] = extendCorners(hc)(true)
+      .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
+
     val lChords: List[Corner] = vChords.flatMap(_.toListCorner)
-    val hChords: List[ExtendedCorner] = extractChords(lChords ::: vc, false)
+
+    val hChords: List[Chord] = extendCorners(lChords ::: vc)(false)
+      .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
 
     vChords ::: hChords
   }
