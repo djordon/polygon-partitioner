@@ -50,29 +50,13 @@ trait CornerPoint {
   def angle: Int
   def x: Double = point.x
   def y: Double = point.y
-}
-
-
-case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
-  lazy val oppositeAngle = ((angle + 270) % 360) - 90
-
-  def isConcave: Boolean = true
-  def point: Point = source
-  def swap: ExtendedCorner = ExtendedCorner(dest, source, oppositeAngle)
-  def toListCorner: List[Corner] = {
-    List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
-  }
-  def toLineString: LineString = {
-    GeometryUtils.geometryFactory.createLineString(
-      Array(new Coordinate(source.x, source.y),
-            new Coordinate(dest.x, dest.y))
-    )
-  }
+  def toListCorner: List[CornerPoint]
 }
 
 
 case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint {
   def z(implicit extendVertically: Boolean): Double = if (extendVertically) y else x
+  def toListCorner: List[Corner] = List(this)
 }
 
 
@@ -90,6 +74,31 @@ object Corner {
     Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
 
+
+case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
+  lazy val oppositeAngle = ((angle + 270) % 360) - 90
+
+  def isConcave: Boolean = true
+  def point: Point = source
+  def swap: ExtendedCorner = ExtendedCorner(dest, source, oppositeAngle)
+  def toListCorner: List[Corner] = {
+    List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
+  }
+  def toLineString: LineString = {
+    GeometryUtils.geometryFactory.createLineString(
+      Array(new Coordinate(source.x, source.y),
+        new Coordinate(dest.x, dest.y))
+    )
+  }
+}
+
+
+case class Chord(source: Corner, dest: Corner) extends CornerPoint {
+  def isConcave: Boolean = true
+  def point: Point = source.point
+  def angle: Int = source.angle
+  def toListCorner: List[Corner] = List(source, dest)
+}
 
 case class Vec(coord: Coordinate, angle: Double)
 
