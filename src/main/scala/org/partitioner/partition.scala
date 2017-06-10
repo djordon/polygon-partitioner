@@ -1,7 +1,7 @@
 package org.partitioner
 
 import scala.annotation.switch
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable.{TreeSet, TreeMap}
 import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
 
 import com.vividsolutions.jts.geom.{Polygon, Coordinate}
@@ -98,6 +98,75 @@ object OrthogonalPolygonCornerExtender {
   }
 }
 
+
+object PolygonChordReducer {
+
+  case class LineContainer(
+    openedCorners: TreeMap[Double, Corner] = TreeMap(),
+    intersections: Map[Chord, Set[Corner]] = Map())
+
+  def intersecting(treeMap: TreeMap[Double, Corner])(cn: Chord): Tuple2[Chord, Set[Corner]] = {
+    (cn, treeMap
+      .from(cn.source.y)
+      .to(cn.dest.y)
+      .values
+      .toSet)
+  }
+
+  def setActions(corners: List[CornerPoint], opened: TreeMap[Double, Corner])
+      : Map[String, List[CornerPoint]] = {
+
+    val toOpenClose: Map[String, List[Corner]] = corners
+      .collect { case c: Corner => c }
+      .groupBy(cn => cn.point)
+      .filter(_._2.length == 1)
+      .map(_._2.head)
+      .toList
+      .groupBy(cn => if (opened contains cn.y) "toClose" else "toOpen")
+
+    toOpenClose + ("toExtend" -> corners.collect { case ch: Chord => ch })
+  }
+
+  private def lineSweeper(container: LineContainer, cps: List[CornerPoint])
+      : LineContainer = {
+
+    val actions = setActions(cps, container.openedCorners)
+
+    val opened: TreeMap[Double, Corner] = container.openedCorners ++
+      actions
+        .getOrElse("toOpen", Nil)
+        .map(cn => (cn.y, cn))
+        .toMap
+        .asInstanceOf[Map[Double, Corner]]
+
+    val closed: TreeMap[Double, Corner] = opened --
+      actions.getOrElse("toClose", Nil).map(_.y)
+
+    val intersections: Map[Chord, Set[Corner]] = actions
+      .getOrElse("toExtend", Nil)
+      .asInstanceOf[List[Chord]]
+      .map(intersecting(opened))
+      .toMap
+
+    LineContainer(closed, intersections ++ container.intersections)
+  }
+
+  def computeIntersections(chords: List[Chord]): Map[Chord, Set[Corner]] = {
+
+    val sortedPoints: List[CornerPoint] = chords.flatMap { ch =>
+      if (ch.angle.abs == 90) List(ch) else ch.toListCorner
+    }
+
+    val lineContainer: LineContainer = sortedPoints
+      .groupBy(_.x)
+      .toList
+      .sortBy(_._1)
+      .map(_._2)
+      .foldLeft(LineContainer())(lineSweeper)
+
+    lineContainer.intersections
+  }
+}
 
 object OrthogonalPolygonPartitioner {
   import scala.language.implicitConversions
