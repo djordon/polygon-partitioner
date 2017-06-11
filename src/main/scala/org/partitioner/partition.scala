@@ -99,16 +99,20 @@ object OrthogonalPolygonCornerExtender {
 }
 
 
-object PolygonChordReducer {
+object OrthogonalPolygonChordReducer {
 
   case class LineContainer(
     openedCorners: TreeMap[Double, Corner] = TreeMap(),
     intersections: Map[Chord, Set[Corner]] = Map())
 
   def intersecting(treeMap: TreeMap[Double, Corner])(cn: Chord): Tuple2[Chord, Set[Corner]] = {
+//    println(cn.source.y)
+//    println(cn.dest.y)
+//    println(treeMap)
+//    println
     (cn, treeMap
-      .from(cn.source.y)
-      .to(cn.dest.y)
+      .from(cn.bot)
+      .to(cn.top)
       .values
       .toSet)
   }
@@ -147,24 +151,58 @@ object PolygonChordReducer {
       .asInstanceOf[List[Chord]]
       .map(intersecting(opened))
       .toMap
-
+//    println(opened)
+//    println(closed)
+//    println(actions.getOrElse("toExtend", Nil))
+//    println(intersections)
     LineContainer(closed, intersections ++ container.intersections)
   }
 
-  def computeIntersections(chords: List[Chord]): Map[Chord, Set[Corner]] = {
-
-    val sortedPoints: List[CornerPoint] = chords.flatMap { ch =>
+  def computeIntersections(chords: List[Chord]): List[Tuple2[Chord, Chord]] = {
+    val horizontalChords: List[CornerPoint] = chords.flatMap { ch =>
       if (ch.angle.abs == 90) List(ch) else ch.toListCorner
     }
 
-    val lineContainer: LineContainer = sortedPoints
+    val lineContainer: LineContainer = horizontalChords
       .groupBy(_.x)
       .toList
       .sortBy(_._1)
       .map(_._2)
       .foldLeft(LineContainer())(lineSweeper)
 
+    val chordMap: Map[Corner, Chord] = chords
+      .filter(_.angle.abs != 90)
+      .map(ch => (ch.left, ch))
+      .toMap
+//    println(chords)
+//    println(horizontalChords)
+//    println(horizontalChords
+//      .groupBy(_.x)
+//      .toList
+//      .sortBy(_._1)
+//      .map(_._2))
+//    println(lineContainer.intersections)
+//    println(chordMap)
     lineContainer.intersections
+      .mapValues(cns => cns.map(chordMap(_)))
+      .flatMap { kv => kv._2 zip Stream.continually(kv._1) }
+      .toList
+  }
+
+  def reduceChords(chords: List[Chord]): List[Chord] = {
+    val intersections: List[Tuple2[Chord, Chord]] = computeIntersections(chords)
+
+    val all: Set[Chord] = intersections.flatMap(t => List(t._1, t._2)).toSet
+    val chordsL: List[Chord] = intersections.map(_._1).distinct
+    val chordsR: List[Chord] = intersections.map(_._2).distinct
+
+//    println(all)
+//    println(chordsL)
+//    println(chordsR)
+    if (chordsL.length > chordsR.length)
+      chordsL ::: chords.filterNot(all.contains(_))
+    else
+      chordsR ::: chords.filterNot(all.contains(_))
   }
 }
 
@@ -218,7 +256,10 @@ object OrthogonalPolygonPartitioner {
     val hEdges: List[CornerPoint] = OrthogonalPolygonCornerExtender
       .extendCorners(vc)(extendVertically=false)
 
-    val chords: List[Chord] = (vEdges ::: hEdges) collect { case c: Chord => c }
+    val chords: List[Chord] = OrthogonalPolygonChordReducer.reduceChords {
+      (vEdges ::: hEdges) collect { case c: Chord => c }
+    }
+
     val chordPoints: Set[Point] = chords
       .flatMap(_.toListCorner)
       .map(_.point)

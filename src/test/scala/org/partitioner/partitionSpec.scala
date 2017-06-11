@@ -17,8 +17,8 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
            new Coordinate(r.lowerRight.x, r.lowerRight.y))
     }
       .map(OrthogonalPolygonBuilder.coverCoordinates(_))
-    println(recs)
-    println(envelopes)
+//    println(recs)
+//    println(envelopes)
     val union: Polygon = CascadedPolygonUnion
       .union(envelopes.asJavaCollection)
       .asInstanceOf[Polygon]
@@ -48,7 +48,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   }
 
   "OrthogonalPolygonPartitioner" can {
-  /*
+
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
         val corners: List[Corner] = OrthogonalPolygonPartitioner
@@ -115,11 +115,11 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
         simplifiedPolygon shouldEqual poly
       }
-*/
+
       "handle polygons with chords" in {
         val polygons: List[Polygon] = List(
-//          fixtures.complexChordedPolygon1,
-//          fixtures.complexChordedPolygon2,
+          fixtures.complexChordedPolygon1,
+          fixtures.complexChordedPolygon2,
           fixtures.complexChordedPolygon3
         )
         val partitions = polygons
@@ -131,7 +131,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
     }
   }
-/*
+
   "OrthogonalPolygonDecomposer" can {
     import OrthogonalPolygonDecomposer.decompose
 
@@ -252,4 +252,3 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     }
   }
 }
-*/
