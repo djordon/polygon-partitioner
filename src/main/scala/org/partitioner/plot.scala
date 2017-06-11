@@ -22,7 +22,7 @@ object PolygonPlotter {
     )
   }
 
-  def extendedCornerPlotter(line: ExtendedCorner): List[Scatter] = {
+  def extendedCornerPlotter(line: CornerLine): List[Scatter] = {
     val points: List[Point] = List(line.source, line.dest)
 
     List(scatterLines(
@@ -70,11 +70,11 @@ object PolygonPlotter {
   }
 
   def quickPlot(
-      polygons: List[Polygon],
-      innerLines: List[ExtendedCorner] = Nil,
-      diagLines: List[Rectangle] = Nil,
-      plotName: String = "quick",
-      fileName: String = "quick.html"): File = {
+                 polygons: List[Polygon],
+                 innerLines: List[CornerLine] = Nil,
+                 diagLines: List[Rectangle] = Nil,
+                 plotName: String = "quick",
+                 fileName: String = "quick.html"): File = {
 
     val scatters: List[Scatter] = polygons.flatMap(polygonPlotter) ++
       innerLines.flatMap(extendedCornerPlotter) ++

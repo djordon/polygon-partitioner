@@ -2,29 +2,30 @@ package org.partitioner
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
-
-import com.vividsolutions.jts.geom.{Polygon, LineString}
+import com.vividsolutions.jts.geom.{LineString, Polygon}
 import com.vividsolutions.jts.operation.polygonize.Polygonizer
+import org.partitioner.partition.OrthogonalPolygonPartitioner
+import org.partitioner.partition.CornerExtractor
 
 
 object OrthogonalPolygonDecomposer {
   import GeometryUtils.IterablePolygon
-  import OrthogonalPolygonPartitioner.orderCorners
-  import OrthogonalPolygonCornerExtender.extendCorners
+  import org.partitioner.partition.OrthogonalPolygonPartitioner.orderCorners
+  import org.partitioner.partition.OrthogonalPolygonCornerExtender.extendCorners
 
   private def uniqueExtendedCorners(
-      set: Set[ExtendedCorner], ec: ExtendedCorner): Set[ExtendedCorner] = {
+                                     set: Set[CornerLine], ec: CornerLine): Set[CornerLine] = {
 
     if (set contains ec.swap) set else set + ec
   }
 
-  def extractChords(corners: List[Corner], extendVertically: Boolean): List[ExtendedCorner] = {
+  def extractChords(corners: List[Corner], extendVertically: Boolean): List[CornerLine] = {
     val concavePoints: Set[Point] = corners
       .filter(_.isConcave)
       .map(_.point)
       .toSet
 
-    val init: Set[ExtendedCorner] = Set[ExtendedCorner]()
+    val init: Set[CornerLine] = Set[CornerLine]()
 
 //    OrthogonalPolygonCornerExtender
 //      .extendCorners(corners)(extendVertically)
@@ -34,7 +35,7 @@ object OrthogonalPolygonDecomposer {
   }
 
   def extractChords(pg: Polygon): List[Chord] = {
-    val corners = OrthogonalPolygonPartitioner.extractCorners(pg)
+    val corners = CornerExtractor.extractCorners(pg)
     val hc: List[Corner] = corners.flatMap(orderCorners(_, vertically = false))
     val vc: List[Corner] = corners.flatMap(orderCorners(_, vertically = true))
 

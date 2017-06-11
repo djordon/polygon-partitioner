@@ -26,14 +26,14 @@ object PointOrderingY extends Ordering[Point] {
 }
 
 
-object CornerOrderingX extends Ordering[CornerPoint] {
-    def compare(a: CornerPoint, b: CornerPoint) =
+object CornerOrderingX extends Ordering[CornerGeometry] {
+    def compare(a: CornerGeometry, b: CornerGeometry) =
       implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
 }
 
 
-object CornerOrderingY extends Ordering[CornerPoint] {
-    def compare(a: CornerPoint, b: CornerPoint) =
+object CornerOrderingY extends Ordering[CornerGeometry] {
+    def compare(a: CornerGeometry, b: CornerGeometry) =
       implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
 }
 
@@ -44,17 +44,17 @@ case class Rectangle(upperLeft: Point, lowerRight: Point) {
 }
 
 
-trait CornerPoint {
+trait CornerGeometry {
   def isConcave: Boolean
   def point: Point
   def angle: Int
   def x: Double = point.x
   def y: Double = point.y
-  def toListCorner: List[CornerPoint]
+  def toListCorner: List[CornerGeometry]
 }
 
 
-case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerPoint {
+case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGeometry {
   def z(implicit extendVertically: Boolean): Double = if (extendVertically) y else x
   def toListCorner: List[Corner] = List(this)
 }
@@ -75,12 +75,12 @@ object Corner {
 }
 
 
-case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends CornerPoint {
+case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeometry {
   lazy val oppositeAngle = ((angle + 270) % 360) - 90
 
   def isConcave: Boolean = true
   def point: Point = source
-  def swap: ExtendedCorner = ExtendedCorner(dest, source, oppositeAngle)
+  def swap: CornerLine = CornerLine(dest, source, oppositeAngle)
   def toListCorner: List[Corner] = {
     List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
   }
@@ -93,7 +93,7 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 }
 
 
-case class Chord(source: Corner, dest: Corner) extends CornerPoint {
+case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   lazy val left: Corner = if (source.x < dest.x) source else dest
   def ymax: Double = if (source.y > dest.y) source.y else dest.y
   def ymin: Double = if (source.y < dest.y) source.y else dest.y
