@@ -1,8 +1,9 @@
 package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
-import com.vividsolutions.jts.geom.{Polygon, Coordinate, Geometry}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import org.partitioner.partition.{OrthogonalPolygonCornerExtender, OrthogonalPolygonPartitioner, CornerExtractor}
 
 import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
@@ -29,18 +30,18 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   "OrthogonalPolygonCornerExtender" can {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
-        val corners: List[Corner] = OrthogonalPolygonPartitioner
+        val corners: List[Corner] = CornerExtractor
           .extractCorners(fixtures.approximatedPolygon).head
 
         val startsVertically: Boolean = corners.head.angle.abs != 90
         val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-        val vEdges: Set[ExtendedCorner] = OrthogonalPolygonCornerExtender
-          .extendCorners(vc)(extendVertically=false).map(_.asInstanceOf[ExtendedCorner]).toSet
+        val vEdges: Set[CornerLine] = OrthogonalPolygonCornerExtender
+          .extendCorners(vc)(extendVertically=false).map(_.asInstanceOf[CornerLine]).toSet
 
-        val expectedEdges: Set[ExtendedCorner] = Set(
-          ExtendedCorner(Point(0.25, 1.5), Point(1.0, 1.5), 0),
-          ExtendedCorner(Point(0.5, 1.75), Point(1.0, 1.75), 0)
+        val expectedEdges: Set[CornerLine] = Set(
+          CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
+          CornerLine(Point(0.5, 1.75), Point(1.0, 1.75), 0)
         )
         vEdges shouldEqual expectedEdges
       }
@@ -51,7 +52,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
-        val corners: List[Corner] = OrthogonalPolygonPartitioner
+        val corners: List[Corner] = CornerExtractor
           .extractCorners(fixtures.approximatedPolygon).head
 
         val points: Iterable[Point] = fixtures.approximatedPolygon
@@ -61,7 +62,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "calculate predictable angles for the corners" in {
-        val corners: List[Corner] = OrthogonalPolygonPartitioner
+        val corners: List[Corner] = CornerExtractor
           .extractCorners(fixtures.approximatedPolygon).head
 
         val angles: List[Int] = List(0, 90, 0, 90, 0, -90, 180, 90, 0)
@@ -167,7 +168,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "extractChords" should {
       import OrthogonalPolygonDecomposer.extractChords
-      import OrthogonalPolygonPartitioner.extractCorners
+      import CornerExtractor.extractCorners
       import OrthogonalPolygonCornerExtender.extendCorners
 
       "extract chords aligned with specified axis" in {
