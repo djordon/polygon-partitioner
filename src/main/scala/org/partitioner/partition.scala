@@ -1,10 +1,11 @@
 package org.partitioner
 
 import scala.annotation.switch
-import scala.collection.immutable.{TreeSet, TreeMap}
-import scala.collection.Searching.{search, Found, InsertionPoint, SearchResult}
+import scala.collection.immutable.{TreeMap, TreeSet}
+import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
+import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 
-import com.vividsolutions.jts.geom.{Polygon, Coordinate}
+import scala.collection.JavaConverters._
 
 
 object OrthogonalPolygonCornerExtender {
@@ -111,8 +112,8 @@ object OrthogonalPolygonChordReducer {
 //    println(treeMap)
 //    println
     (cn, treeMap
-      .from(cn.bot)
-      .to(cn.top)
+      .from(cn.ymin)
+      .to(cn.ymax)
       .values
       .toSet)
   }
@@ -206,6 +207,7 @@ object OrthogonalPolygonChordReducer {
   }
 }
 
+
 object OrthogonalPolygonPartitioner {
   import scala.language.implicitConversions
   import GeometryUtils.IterablePolygon
@@ -246,44 +248,69 @@ object OrthogonalPolygonPartitioner {
     if (startsVertically == vertically) corners.init else corners.tail
   }
 
+  def extractInternalEdges(corners: List[List[Corner]], verticals: Boolean)
+      : List[CornerPoint] = {
+
+    val co: List[Corner] = corners.flatMap(orderCorners(_, vertically = verticals))
+
+    OrthogonalPolygonCornerExtender
+      .extendCorners(co)(extendVertically = !verticals)
+  }
+
   def makeRectangleCorners(corners: List[List[Corner]]): List[CornerPoint] = {
-    val hc: List[Corner] = corners.flatMap(orderCorners(_, vertically = false))
-    val vc: List[Corner] = corners.flatMap(orderCorners(_, vertically = true))
 
-    val vEdges: List[CornerPoint] = OrthogonalPolygonCornerExtender
-      .extendCorners(hc)(extendVertically=true)
-
-    val hEdges: List[CornerPoint] = OrthogonalPolygonCornerExtender
-      .extendCorners(vc)(extendVertically=false)
+    val vEdges: List[CornerPoint] = extractInternalEdges(corners, true)
+    val hEdges: List[CornerPoint] = extractInternalEdges(corners, false)
 
     val chords: List[Chord] = OrthogonalPolygonChordReducer.reduceChords {
       (vEdges ::: hEdges) collect { case c: Chord => c }
     }
+
+    val horizontalChords: List[Corner] = chords
+      .filter(_.angle.abs != 90)
+      .flatMap(_.toListCorner)
+      .map { _.copy(isConcave = false) }
 
     val chordPoints: Set[Point] = chords
       .flatMap(_.toListCorner)
       .map(_.point)
       .toSet
 
-    val extendedCorners: List[ExtendedCorner] = (vEdges ::: hEdges) collect {
+    val eCorners: List[ExtendedCorner] = (vEdges ::: hEdges) collect {
       case ec: ExtendedCorner if !chordPoints.contains(ec.source) => ec
     }
 
-    chords ::: extendedCorners ::: corners.flatten.tail.filterNot(_.isConcave)
+    val co: List[Corner] = eCorners.flatMap(_.toListCorner) ::: horizontalChords
+
+    val extendedCorners = OrthogonalPolygonCornerExtender
+      .extendCorners(co)(extendVertically = true)
+
+    chords :::
+    extendedCorners :::
+    corners.map(_.tail).flatten.filterNot(_.isConcave) :::
+    eCorners.filter(_.angle.abs != 90)
   }
 
-  private def cornerFolder(
-      stacks: EndpointStacks,
-      corner: CornerPoint): EndpointStacks = {
-
-    corner match {
+  private def stackExtendedCorner(ex: ExtendedCorner, stacks: EndpointStacks): EndpointStacks = {
+    ex match {
       case ExtendedCorner(s, d, 0) => stacks.prepend(ll=s, lr=d)
       case ExtendedCorner(s, d, 90) => stacks.prepend(ul=d, lr=s)
       case ExtendedCorner(s, d, 180) => stacks.prepend(ul=d, ll=d)
       case ExtendedCorner(s, d, -90) => stacks.prepend(ul=s, ll=d, lr=d)
+    }
+  }
+
+  private def stackCorner(cn: Corner, stacks: EndpointStacks): EndpointStacks = {
+    cn match {
       case Corner(s, false, 90) => stacks.prepend(ul=s)
       case Corner(s, false, 180) => stacks.prepend(ll=s)
       case Corner(s, false, -90) => stacks.prepend(lr=s)
+      case _ => stacks
+    }
+  }
+
+  private def stackChord(ch: Chord, stacks: EndpointStacks): EndpointStacks = {
+    ch match {
       case Chord(Corner(s, _, 90), Corner(d, _, 0)) => stacks.prepend(lr=s)
       case Chord(Corner(s, _, 90), Corner(d, _, -90)) => stacks.prepend(lr=s, ul=d)
       case Chord(Corner(s, _, -90), Corner(d, _, 90)) => stacks.prepend(lr=d, ul=s)
@@ -292,7 +319,17 @@ object OrthogonalPolygonPartitioner {
       case Chord(Corner(s, _, 180), Corner(d, _, 0)) => stacks.prepend(ll=d)
       case Chord(Corner(s, _, 0), Corner(d, _, 180)) => stacks.prepend(ll=s)
       case Chord(Corner(s, _, 0), Corner(d, _, -90)) => stacks.prepend(ll=s, lr=d)
-      case _ => stacks
+    }
+  }
+
+  private def cornerFolder(
+      stacks: EndpointStacks,
+      corner: CornerPoint): EndpointStacks = {
+
+    corner match {
+      case ex: ExtendedCorner => stackExtendedCorner(ex, stacks)
+      case cn: Corner => stackCorner(cn, stacks)
+      case ch: Chord => stackChord(ch, stacks)
     }
   }
 

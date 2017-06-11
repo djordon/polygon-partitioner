@@ -95,8 +95,8 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
 
 case class Chord(source: Corner, dest: Corner) extends CornerPoint {
   lazy val left: Corner = if (source.x < dest.x) source else dest
-  def top: Double = if (source.y > dest.y) source.y else dest.y
-  def bot: Double = if (source.y < dest.y) source.y else dest.y
+  def ymax: Double = if (source.y > dest.y) source.y else dest.y
+  def ymin: Double = if (source.y < dest.y) source.y else dest.y
   def isConcave: Boolean = true
   def point: Point = source.point
   def angle: Int = source.angle
