@@ -8,6 +8,7 @@ import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
 import scala.language.reflectiveCalls
+import scala.io.Source
 
 
 trait PolygonFixtures {
@@ -39,7 +40,7 @@ trait PolygonFixtures {
       .read("Polygon ((0 0, 0 1, 1 2, 1 1, 1 0, 0 0))")
       .asInstanceOf[Polygon]
 
-    val redundentPointPolygon: Polygon = wktReader
+    val redundantPointPolygon: Polygon = wktReader
       .read("Polygon ((0 0, 0 1, 0.5 1.5, 1 2, 1 1, 1 0, 0 0))")
       .asInstanceOf[Polygon]
 
@@ -62,7 +63,7 @@ trait PolygonFixtures {
         | 0.5 1.75, 0.5 2, 1 2, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
 
-    val chordedPolygon: Polygon = wktReader
+    val chordedPolygon0: Polygon = wktReader
       .read("""
         |Polygon ((0 0, 0 2, 2 2, 2 1, 3 1, 3 0,
         | 2 0, 2 -1, 1 -1, 1 0, 0 0))""".stripMargin.replaceAll("\n", " "))
@@ -90,6 +91,10 @@ trait PolygonFixtures {
         | 6 1, 3 1, 3 0, 2 0, 2 1, 1 1, 1 2,
         | 0 2))""".stripMargin.replaceAll("\n", " "))
       .asInstanceOf[Polygon]
+
+    val holedPolygon1: Polygon = wktReader.read(
+        Source.fromResource("holedPolygon1").getLines.toList.head
+    ).asInstanceOf[Polygon]
   }
 }
 
@@ -109,7 +114,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
       "keep redundent points that lie on non-axis aligned lines" in {
         val simplified: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(fixtures.redundentPointPolygon)
+          .removeAxisAlignedColinearity(fixtures.redundantPointPolygon)
 
         val nothingHappened: Polygon = PolygonApproximator
           .removeAxisAlignedColinearity(fixtures.preDensifiedPolygon)

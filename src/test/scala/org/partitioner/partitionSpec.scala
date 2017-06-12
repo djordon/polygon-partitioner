@@ -3,7 +3,7 @@ package org.partitioner
 import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
-import org.partitioner.partition.{OrthogonalPolygonCornerExtender, OrthogonalPolygonPartitioner, CornerExtractor}
+import org.partitioner.partition._
 
 import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
@@ -18,8 +18,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
            new Coordinate(r.lowerRight.x, r.lowerRight.y))
     }
       .map(OrthogonalPolygonBuilder.coverCoordinates(_))
-//    println(recs)
-//    println(envelopes)
+
     val union: Polygon = CascadedPolygonUnion
       .union(envelopes.asJavaCollection)
       .asInstanceOf[Polygon]
@@ -27,29 +26,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     PolygonApproximator.removeAxisAlignedColinearity(union)
   }
 
-  "OrthogonalPolygonCornerExtender" can {
-    "extendCorners" should {
-      "extend the corners until they hit the boundary" in {
-        val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures.approximatedPolygon).head
-
-        val startsVertically: Boolean = corners.head.angle.abs != 90
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val vEdges: Set[CornerLine] = OrthogonalPolygonCornerExtender
-          .extendCorners(vc)(extendVertically=false).map(_.asInstanceOf[CornerLine]).toSet
-
-        val expectedEdges: Set[CornerLine] = Set(
-          CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
-          CornerLine(Point(0.5, 1.75), Point(1.0, 1.75), 0)
-        )
-        vEdges shouldEqual expectedEdges
-      }
-    }
-  }
-
   "OrthogonalPolygonPartitioner" can {
-
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
         val corners: List[Corner] = CornerExtractor
@@ -130,125 +107,106 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         for (partitionPolygon <- partitions zip polygons)
           partitionPolygon._1 shouldEqual partitionPolygon._2
       }
+
+      "handle have very few partitions" in {
+        val polygons: List[Polygon] = List(
+          fixtures.complexChordedPolygon1,
+          fixtures.complexChordedPolygon2,
+          fixtures.complexChordedPolygon3
+        )
+        val partitions: List[List[Rectangle]] = polygons
+          .map(OrthogonalPolygonPartitioner.partition)
+
+        partitions(0).length shouldEqual 4
+        partitions(1).length shouldEqual 5
+        partitions(2).length shouldEqual 5
+      }
     }
   }
+}
 
-  "OrthogonalPolygonDecomposer" can {
-    import OrthogonalPolygonDecomposer.decompose
+class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
 
-    "decompose" should {
+  "OrthogonalPolygonCornerExtender" can {
+    "extendCorners" should {
+      "extend the corners until they hit the boundary" in {
+        val corners: List[Corner] = CornerExtractor
+          .extractCorners(fixtures.approximatedPolygon).head
 
-      "leave chordless polygons alone" in {
-        val polygons: List[Polygon] = decompose(fixtures.simplePolygon)
+        val startsVertically: Boolean = corners.head.angle.abs != 90
+        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
-        polygons.head shouldEqual fixtures.simplePolygon
-        polygons.length shouldEqual 1
+        val vEdges: Set[CornerLine] = OrthogonalPolygonCornerExtender
+          .extendCorners(vc)(extendVertically = false).map(_.asInstanceOf[CornerLine]).toSet
+
+        val expectedEdges: Set[CornerLine] = Set(
+          CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
+          CornerLine(Point(0.5, 1.75), Point(1.0, 1.75), 0)
+        )
+        vEdges shouldEqual expectedEdges
+      }
+    }
+  }
+}
+
+class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
+  import OrthogonalPolygonChordReducer.{reduceChords, computeIntersections}
+  import OrthogonalPolygonPartitioner.extractInternalEdges
+  import CornerExtractor.extractCorners
+
+  "OrthogonalPolygonChordReducer" can {
+    "computeIntersections" should {
+      "find all intersection between horizontal and vertical chords" in {
+        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
+        val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
+
+        val allChords: List[Chord] = (vEdges ::: hEdges) collect { case c: Chord => c }
+        val chords: List[(Chord, Chord)] = computeIntersections(allChords)
+
+        allChords.length shouldEqual 3
+        chords.length shouldEqual 2
       }
 
-      "break down chorded polygons to chordless polygons" in {
-        val polygons: List[Polygon] = decompose(fixtures.chordedPolygon)
-        val chordless: List[Polygon] = polygons.flatMap(decompose(_))
+      "find chords that intersect" in {
+        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
+        val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
 
-        polygons shouldEqual chordless
-      }
+        val allChords: List[Chord] = (vEdges ::: hEdges) collect { case c: Chord => c }
+        val chords: List[(Chord, Chord)] = computeIntersections(allChords)
 
-      "create polygons that union to the original" in {
-        val polygons: List[Polygon] = decompose(fixtures.chordedPolygon)
+        def chordsIntersect(a: Chord, b: Chord): Boolean = {
+          (a.yMin <= b.y && b.y <= a.yMax) && (b.xMin <= a.x && a.x <= b.xMax)
+        }
 
-        val union: Polygon = CascadedPolygonUnion
-          .union(polygons.asJavaCollection)
-          .asInstanceOf[Polygon]
+        val intersects: List[Boolean] = chords.map { case (ch1, ch2) =>
+          ch1.angle.abs match {
+            case 90 => chordsIntersect(ch1, ch2)
+            case _ => chordsIntersect(ch2, ch1)
+          }
+        }
 
-        val unifiedPolygon: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(union)
-
-        unifiedPolygon shouldEqual fixtures.chordedPolygon
+        intersects.reduce(_ && _) should be (true)
       }
     }
 
-    "extractChords" should {
-      import OrthogonalPolygonDecomposer.extractChords
-      import CornerExtractor.extractCorners
-      import OrthogonalPolygonCornerExtender.extendCorners
+    "reduceChords" should {
+      "return a subset of non-intersecting chords" in {
+        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
+        val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
 
-      "extract chords aligned with specified axis" in {
-        val corners: List[Corner] = extractCorners(fixtures.chordedPolygon).head
-        val startsVertically: Boolean = corners.head.angle.abs != 90
+        val allChords: List[Chord] = (vEdges ::: hEdges) collect { case c: Chord => c }
+        val intersecting: List[(Chord, Chord)] = computeIntersections(allChords)
+        val intersectingMap = intersecting.toMap ++ intersecting.map(_.swap).toMap
+        val chords: List[Chord] = reduceChords(allChords)
 
-        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val vChords: List[Chord] = extendCorners(hc)(true)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-
-        val hChords: List[Chord] = extendCorners(vc)(false)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-  
-        vChords.head.source.point shouldEqual Point(2.0, 1.0)
-        vChords.head.dest.point shouldEqual Point(2.0, 0.0)
-
-        hChords.head.source.point shouldEqual Point(2.0, 0.0)
-        hChords.head.dest.point shouldEqual Point(1.0, 0.0)
-
-        vChords.length shouldEqual 1
-        hChords.length shouldEqual 1
-      }
-
-      "only extract choords that don't cross" in {
-        val chords = extractChords(fixtures.complexChordedPolygon1)
+        allChords.length shouldEqual 3
         chords.length shouldEqual 2
 
-        val corners: List[Corner] = extractCorners(fixtures.complexChordedPolygon1).head
-        val startsVertically: Boolean = corners.head.angle.abs != 90
-
-        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val vChords: List[Chord] = extendCorners(hc)(true)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-
-        val hChords: List[Chord] = extendCorners(vc)(false)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-
-
-        vChords.length shouldEqual 2
-        hChords.length shouldEqual 1
-
-        hChords.head shouldEqual Chord(Corner(Point(2.0, 0.0), true, 180), Corner(Point(1.0, 0.0), true, 90))
-        chords.contains(hChords.head) should be (false)
-        vChords shouldEqual chords
-      }
-
-      "extract choords when there are no crossings" in {
-        val chords = extractChords(fixtures.complexChordedPolygon3)
-
-        chords.length shouldEqual 4
-
-        val corners: List[Corner] = extractCorners(fixtures.complexChordedPolygon3).head
-        val startsVertically: Boolean = corners.head.angle.abs != 90
-
-        val hc: List[Corner] = if (startsVertically) corners.tail else corners.init
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val vChords: List[Chord] = extendCorners(hc)(true)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-
-        val hChords: List[Chord] = extendCorners(vc)(false)
-          .filter(_.isInstanceOf[Chord]).asInstanceOf[List[Chord]]
-  
-        vChords.length shouldEqual 2
-        hChords.length shouldEqual 2
-
-        val expectedHorizontalChords: Set[Chord] = Set(
-          Chord(Corner(Point(3.0, 1.0), true, 180), Corner(Point(2.0, 1.0), true, 90)),
-          Chord(Corner(Point(4.0, 6.0), true, 0), Corner(Point(5.0, 6.0), true, -90))
-        )
-        val expectedVerticalChords: Set[Chord] = Set(
-          Chord(Corner(Point(1.0, 2.0), true, 90), Corner(Point(1.0, 3.0), true, 0)),
-          Chord(Corner(Point(6.0, 5.0), true, -90), Corner(Point(6.0, 4.0), true, 180))
-        )
-        hChords.toSet shouldEqual expectedHorizontalChords
-        vChords.toSet shouldEqual expectedVerticalChords
+        intersectingMap(chords.head) should not equal chords.last
+        intersectingMap(chords.last) should not equal chords.head
       }
     }
   }
