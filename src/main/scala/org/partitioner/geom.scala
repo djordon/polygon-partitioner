@@ -61,10 +61,10 @@ case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGe
 
 
 object Corner {
-  def apply(coords: List[Coordinate]) = new Corner(
-    point = Point.apply(coords(1)),
-    isConcave = isConcaveCorner(coords),
-    angle = edgeDirection(coords.init)
+  def apply(coordinates: List[Coordinate]) = new Corner(
+    point = Point.apply(coordinates(1)),
+    isConcave = isConcaveCorner(coordinates),
+    angle = edgeDirection(coordinates.init)
   )
 
   def edgeDirection(vec: List[Coordinate]): Int = 
@@ -95,8 +95,10 @@ case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeom
 
 case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   lazy val left: Corner = if (source.x < dest.x) source else dest
-  def ymax: Double = if (source.y > dest.y) source.y else dest.y
-  def ymin: Double = if (source.y < dest.y) source.y else dest.y
+  def yMax: Double = if (source.y > dest.y) source.y else dest.y
+  def yMin: Double = if (source.y < dest.y) source.y else dest.y
+  def xMax: Double = if (source.x > dest.x) source.x else dest.x
+  def xMin: Double = if (source.x < dest.x) source.x else dest.x
   def isConcave: Boolean = true
   def point: Point = source.point
   def angle: Int = source.angle
