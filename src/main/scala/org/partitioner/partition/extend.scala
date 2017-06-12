@@ -7,7 +7,7 @@ import scala.collection.immutable.TreeSet
 
 
 case class LineContainer(
-    openedCoords: TreeSet[Double] = TreeSet(),
+    openedLines: TreeSet[Double] = TreeSet(),
     cornerLines: List[CornerLine] = Nil)
 
 
@@ -45,9 +45,9 @@ object OrthogonalPolygonCornerExtender {
   private def lineSweeper(container: LineContainer, corners: List[Corner])(
     implicit extendVertically: Boolean): LineContainer = {
 
-    val actions = setActions(corners, container.openedCoords)
+    val actions = setActions(corners, container.openedLines)
 
-    val opened: TreeSet[Double] = container.openedCoords ++
+    val opened: TreeSet[Double] = container.openedLines ++
       actions.getOrElse("toOpen", Nil).map(_.z)
 
     val closed: TreeSet[Double] = opened --
@@ -67,9 +67,8 @@ object OrthogonalPolygonCornerExtender {
     }
   }
 
-  private def uniqueExtendedCorners(
-                                     set: Set[CornerLine], ec: CornerLine): Set[CornerLine] = {
-
+  private def uniqueExtendedCorners(set: Set[CornerLine], ec: CornerLine)
+      : Set[CornerLine] = {
     if (set contains ec.swap) set else set + ec
   }
 
@@ -100,7 +99,6 @@ object OrthogonalPolygonCornerExtender {
 object CornerLineAdjuster {
 
   def extendCorner(treeSet: TreeSet[Double])(cn: Corner): CornerLine = {
-
     val destination: Point = (cn.angle: @switch) match {
       case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
       case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
@@ -134,9 +132,9 @@ object CornerLineAdjuster {
   private def lineSweeper(container: LineContainer, corners: List[CornerGeometry])
       : LineContainer = {
 
-    val actions = setActions(corners, container.openedCoords)
+    val actions = setActions(corners, container.openedLines)
 
-    val opened: TreeSet[Double] = container.openedCoords ++
+    val opened: TreeSet[Double] = container.openedLines ++
       actions.getOrElse("toOpen", Nil).map(_.y)
 
     val closed: TreeSet[Double] = opened --
@@ -150,11 +148,6 @@ object CornerLineAdjuster {
   }
 
   def adjustCornersLines(corners: List[CornerGeometry]): List[CornerLine] = {
-
-    val concavePointMap: Map[Point, CornerGeometry] = corners
-      .filter(_.isConcave)
-      .map(cn => (cn.point, cn))
-      .toMap
 
     val lineContainer: LineContainer = corners
       .groupBy(_.x)
