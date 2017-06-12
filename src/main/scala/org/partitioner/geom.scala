@@ -5,7 +5,7 @@ import com.vividsolutions.jts.geom.{Coordinate, LineString}
 
 
 case class Point(x: Double, y: Double) {
-  def toTuple: Tuple2[Double, Double] = (x, y)
+  def toTuple: (Double, Double) = (x, y)
 }
 
 
@@ -16,25 +16,25 @@ object Point {
 
 object PointOrderingX extends Ordering[Point] {
     def compare(a: Point, b: Point) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
+      implicitly[Ordering[(Double, Double)]].compare((a.x, a.y), (b.x, b.y))
 }
 
 
 object PointOrderingY extends Ordering[Point] {
     def compare(a: Point, b: Point) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
+      implicitly[Ordering[(Double, Double)]].compare((a.y, a.x), (b.y, b.x))
 }
 
 
 object CornerOrderingX extends Ordering[CornerGeometry] {
     def compare(a: CornerGeometry, b: CornerGeometry) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.x, a.y), (b.x, b.y))
+      implicitly[Ordering[(Double, Double)]].compare((a.x, a.y), (b.x, b.y))
 }
 
 
 object CornerOrderingY extends Ordering[CornerGeometry] {
     def compare(a: CornerGeometry, b: CornerGeometry) =
-      implicitly[Ordering[Tuple2[Double, Double]]].compare((a.y, a.x), (b.y, b.x))
+      implicitly[Ordering[(Double, Double)]].compare((a.y, a.x), (b.y, b.x))
 }
 
 
