@@ -11,14 +11,10 @@ object OrthogonalPolygonChordReducer {
     openedCorners: TreeMap[Double, Corner] = TreeMap(),
     intersections: Map[Chord, Set[Corner]] = Map())
 
-  def intersecting(treeMap: TreeMap[Double, Corner])(cn: Chord): Tuple2[Chord, Set[Corner]] = {
-    //    println(cn.source.y)
-    //    println(cn.dest.y)
-    //    println(treeMap)
-    //    println
+  def intersecting(treeMap: TreeMap[Double, Corner])(cn: Chord): (Chord, Set[Corner]) = {
     (cn, treeMap
-      .from(cn.ymin)
-      .to(cn.ymax)
+      .from(cn.yMin)
+      .to(cn.yMax)
       .values
       .toSet)
   }
@@ -57,14 +53,11 @@ object OrthogonalPolygonChordReducer {
       .asInstanceOf[List[Chord]]
       .map(intersecting(opened))
       .toMap
-    //    println(opened)
-    //    println(closed)
-    //    println(actions.getOrElse("toExtend", Nil))
-    //    println(intersections)
+
     ChordContainer(closed, intersections ++ container.intersections)
   }
 
-  def computeIntersections(chords: List[Chord]): List[Tuple2[Chord, Chord]] = {
+  def computeIntersections(chords: List[Chord]): List[(Chord, Chord)] = {
     val horizontalChords: List[CornerGeometry] = chords.flatMap { ch =>
       if (ch.angle.abs == 90) List(ch) else ch.toListCorner
     }
@@ -80,31 +73,20 @@ object OrthogonalPolygonChordReducer {
       .filter(_.angle.abs != 90)
       .map(ch => (ch.left, ch))
       .toMap
-    //    println(chords)
-    //    println(horizontalChords)
-    //    println(horizontalChords
-    //      .groupBy(_.x)
-    //      .toList
-    //      .sortBy(_._1)
-    //      .map(_._2))
-    //    println(lineContainer.intersections)
-    //    println(chordMap)
+
     lineContainer.intersections
       .mapValues(cns => cns.map(chordMap(_)))
-      .flatMap { kv => kv._2 zip Stream.continually(kv._1) }
       .toList
+      .flatMap { kv => kv._2.map { (_, kv._1) } }
   }
 
   def reduceChords(chords: List[Chord]): List[Chord] = {
-    val intersections: List[Tuple2[Chord, Chord]] = computeIntersections(chords)
+    val intersections: List[(Chord, Chord)] = computeIntersections(chords)
 
     val all: Set[Chord] = intersections.flatMap(t => List(t._1, t._2)).toSet
     val chordsL: List[Chord] = intersections.map(_._1).distinct
     val chordsR: List[Chord] = intersections.map(_._2).distinct
 
-    //    println(all)
-    //    println(chordsL)
-    //    println(chordsR)
     if (chordsL.length > chordsR.length)
       chordsL ::: chords.filterNot(all.contains(_))
     else
