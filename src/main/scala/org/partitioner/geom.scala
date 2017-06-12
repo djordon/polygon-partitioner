@@ -4,9 +4,7 @@ import com.vividsolutions.jts.algorithm.Angle
 import com.vividsolutions.jts.geom.{Coordinate, LineString}
 
 
-case class Point(x: Double, y: Double) {
-  def toTuple: (Double, Double) = (x, y)
-}
+case class Point(x: Double, y: Double)
 
 
 object Point {
