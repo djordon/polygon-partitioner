@@ -11,6 +11,44 @@ case class LineContainer(
     cornerLines: List[CornerLine] = Nil)
 
 
+trait RectilinearLineSweeping {
+  def lineAction(treeSet: TreeSet[Double])(cn: CornerGeometry): CornerLine
+
+  def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
+    implicit extendVertically: Boolean): Map[String, List[CornerGeometry]]
+
+  def lineSweeper(lines: LineContainer, corners: List[CornerGeometry])(
+      implicit vertical: Boolean): LineContainer = {
+
+    val actions = setActions(corners, lines.openedLines)
+
+    val opened: TreeSet[Double] = lines.openedLines ++
+      actions.getOrElse("toOpen", Nil).map(_.z)
+
+    val closed: TreeSet[Double] = opened --
+      actions.getOrElse("toClose", Nil).map(_.z)
+
+    val adjusted: List[CornerLine] = actions
+        .getOrElse("toAdjust", Nil).map(lineAction(opened))
+
+    LineContainer(closed, adjusted ::: lines.cornerLines)
+  }
+
+  def adjustCornersGeometries(corners: List[CornerGeometry])(
+    implicit extendVertically: Boolean): List[CornerLine] = {
+
+    val lineContainer: LineContainer = corners
+      .groupBy(_.z(!extendVertically))
+      .toList
+      .sortBy(_._1)
+      .map(_._2)
+      .foldLeft(LineContainer())(lineSweeper)
+
+    lineContainer.cornerLines
+  }
+}
+
+
 object OrthogonalPolygonCornerExtender {
 
   def extendCorner(treeSet: TreeSet[Double])(cn: Corner): CornerLine = {
