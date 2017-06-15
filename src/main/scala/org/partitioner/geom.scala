@@ -48,12 +48,12 @@ trait CornerGeometry {
   def angle: Int
   def x: Double = point.x
   def y: Double = point.y
+  def z(implicit vertical: Boolean): Double = if (vertical) y else x
   def toListCorner: List[CornerGeometry]
 }
 
 
 case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGeometry {
-  def z(implicit extendVertically: Boolean): Double = if (extendVertically) y else x
   def toListCorner: List[Corner] = List(this)
 }
 
