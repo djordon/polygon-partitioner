@@ -115,6 +115,9 @@ object OrthogonalPolygonBuilder {
     val approximated: List[LinearRing] = (exterior :: polygon.getHoles)
       .map { method(_).getExteriorRing.asInstanceOf[LinearRing] }
 
-    geometryFactory.createPolygon(approximated.head, approximated.tail.toArray)
+    geometryFactory
+      .createPolygon(approximated.head, approximated.tail.toArray)
+      .norm
+      .asInstanceOf[Polygon]
   }
 }
