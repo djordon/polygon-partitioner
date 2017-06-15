@@ -12,10 +12,19 @@ case class LineContainer(
 
 
 trait RectilinearLineSweeping {
-  def lineAction(treeSet: TreeSet[Double])(cn: CornerGeometry): CornerLine
-
   def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
-    implicit extendVertically: Boolean): Map[String, List[CornerGeometry]]
+    implicit vertical: Boolean): Map[String, List[CornerGeometry]]
+
+  def lineAction(treeSet: TreeSet[Double])(cn: CornerGeometry): CornerLine = {
+    val destination: Point = (cn.angle: @switch) match {
+      case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
+      case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
+      case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
+      case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
+    }
+
+    CornerLine(cn.point, destination, cn.angle)
+  }
 
   def lineSweeper(lines: LineContainer, corners: List[CornerGeometry])(
       implicit vertical: Boolean): LineContainer = {
@@ -35,10 +44,10 @@ trait RectilinearLineSweeping {
   }
 
   def adjustCornersGeometries(corners: List[CornerGeometry])(
-    implicit extendVertically: Boolean): List[CornerLine] = {
+    implicit vertical: Boolean): List[CornerLine] = {
 
     val lineContainer: LineContainer = corners
-      .groupBy(_.z(!extendVertically))
+      .groupBy(_.z(!vertical))
       .toList
       .sortBy(_._1)
       .map(_._2)
@@ -49,53 +58,27 @@ trait RectilinearLineSweeping {
 }
 
 
-object OrthogonalPolygonCornerExtender {
+object OrthogonalPolygonCornerExtender extends RectilinearLineSweeping {
 
-  def extendCorner(treeSet: TreeSet[Double])(cn: Corner): CornerLine = {
-
-    val destination: Point = (cn.angle: @switch) match {
-      case 0 => Point((treeSet - cn.x).from(cn.x).firstKey, cn.y)
-      case 180 => Point((treeSet - cn.x).to(cn.x).lastKey, cn.y)
-      case -90 => Point(cn.x, (treeSet - cn.y).to(cn.y).lastKey)
-      case 90 => Point(cn.x, (treeSet - cn.y).from(cn.y).firstKey)
-    }
-
-    CornerLine(cn.point, destination, cn.angle)
+  override def lineAction(treeSet: TreeSet[Double])(cn: CornerGeometry): CornerLine = {
+    super.lineAction(treeSet - cn.w)(cn)
   }
 
-  def setActions(corners: List[Corner], opened: TreeSet[Double])(
-    implicit extendVertically: Boolean): Map[String, List[Corner]] = {
+  def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
+    implicit extendVertically: Boolean): Map[String, List[CornerGeometry]] = {
 
-    val toOpenClose: Map[String, List[Corner]] = corners
+    val toOpenClose: Map[String, List[CornerGeometry]] = corners
       .groupBy(cn => cn.point)
       .filter(_._2.length == 1)
       .map(_._2.head)
       .toList
       .groupBy(cn => if (opened.contains(cn.z)) "toClose" else "toOpen")
 
-    val toExtend: List[Corner] = corners filter { cn =>
+    val toAdjust: List[CornerGeometry] = corners filter { cn =>
       (extendVertically == (cn.angle.abs == 90)) && cn.isConcave
     }
 
-    toOpenClose + ("toExtend" -> toExtend)
-  }
-
-  private def lineSweeper(container: LineContainer, corners: List[Corner])(
-    implicit extendVertically: Boolean): LineContainer = {
-
-    val actions = setActions(corners, container.openedLines)
-
-    val opened: TreeSet[Double] = container.openedLines ++
-      actions.getOrElse("toOpen", Nil).map(_.z)
-
-    val closed: TreeSet[Double] = opened --
-      actions.getOrElse("toClose", Nil).map(_.z)
-
-    val extended: List[CornerLine] = actions
-      .getOrElse("toExtend", Nil)
-      .map(extendCorner(opened))
-
-    LineContainer(closed, extended ::: container.cornerLines)
+    toOpenClose + ("toAdjust" -> toAdjust)
   }
 
   private def makeChord(pointMap: Map[Point, Corner])(ec: CornerLine): CornerGeometry = {
@@ -118,15 +101,7 @@ object OrthogonalPolygonCornerExtender {
       .map(cn => (cn.point, cn))
       .toMap
 
-    val lineContainer: LineContainer = corners
-      .groupBy(_.z(!extendVertically))
-      .toList
-      .sortBy(_._1)
-      .map(_._2)
-      .foldLeft(LineContainer())(lineSweeper)
-
-    lineContainer
-      .cornerLines
+    adjustCornersGeometries(corners)
       .foldLeft(Set[CornerLine]())(uniqueExtendedCorners)
       .toList
       .map { makeChord(concavePointMap)(_) }
@@ -134,21 +109,10 @@ object OrthogonalPolygonCornerExtender {
 }
 
 
-object CornerLineAdjuster {
-
-  def extendCorner(treeSet: TreeSet[Double])(cn: Corner): CornerLine = {
-    val destination: Point = (cn.angle: @switch) match {
-      case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
-      case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
-      case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
-      case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
-    }
-
-    CornerLine(cn.point, destination, cn.angle)
-  }
+object CornerLineAdjuster extends RectilinearLineSweeping {
 
   def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
-      implicit extendVertically: Boolean): Map[String, List[Corner]] = {
+    implicit vertical: Boolean): Map[String, List[Corner]] = {
 
     val destinationCorners: List[Corner] = corners
       .collect { case cn: CornerLine => cn.toListCorner.last }
@@ -163,40 +127,9 @@ object CornerLineAdjuster {
     val toClose: List[Corner] = destinationCorners ::: toOpenClose
       .getOrElse("toClose", Nil)
 
-    val toExtend: List[Corner] = corners
+    val toAdjust: List[Corner] = corners
       .collect { case cn: CornerLine => cn.toListCorner.head }
 
-    Map("toOpen" -> toOpen, "toClose" -> toClose, "toExtend" -> toExtend)
-  }
-
-  private def lineSweeper(container: LineContainer, corners: List[CornerGeometry])(
-      implicit extendVertically: Boolean): LineContainer = {
-
-    val actions = setActions(corners, container.openedLines)
-
-    val opened: TreeSet[Double] = container.openedLines ++
-      actions.getOrElse("toOpen", Nil).map(_.z)
-
-    val closed: TreeSet[Double] = opened --
-      actions.getOrElse("toClose", Nil).map(_.z)
-
-    val extended: List[CornerLine] = actions
-      .getOrElse("toExtend", Nil)
-      .map(extendCorner(opened))
-
-    LineContainer(closed, extended ::: container.cornerLines)
-  }
-
-  def adjustCornersLines(corners: List[CornerGeometry])(
-      implicit extendVertically: Boolean): List[CornerLine] = {
-
-    val lineContainer: LineContainer = corners
-      .groupBy(_.z(!extendVertically))
-      .toList
-      .sortBy(_._1)
-      .map(_._2)
-      .foldLeft(LineContainer())(lineSweeper)
-
-    lineContainer.cornerLines
+    Map("toOpen" -> toOpen, "toClose" -> toClose, "toAdjust" -> toAdjust)
   }
 }

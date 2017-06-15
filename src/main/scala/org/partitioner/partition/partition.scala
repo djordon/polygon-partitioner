@@ -136,11 +136,11 @@ object OrthogonalPolygonPartitioner {
     }
 
     val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
-    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersLines
+    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
       { lines.filter(_.angle.abs != 90) ::: extractChordCorners(chords, true) }
       { false }
 
-    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersLines
+    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
       { horizontalLines.flatMap(_.toListCorner) :::
           lines.filter(_.angle.abs == 90) :::
           extractChordCorners(chords, false) }

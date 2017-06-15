@@ -49,6 +49,7 @@ trait CornerGeometry {
   def x: Double = point.x
   def y: Double = point.y
   def z(implicit vertical: Boolean): Double = if (vertical) y else x
+  def w: Double = if (angle.abs == 90) y else x
   def toListCorner: List[CornerGeometry]
 }
 
