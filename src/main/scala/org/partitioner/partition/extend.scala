@@ -100,6 +100,8 @@ object CornerLineAdjuster {
 
   def extendCorner(treeSet: TreeSet[Double])(cn: Corner): CornerLine = {
     val destination: Point = (cn.angle: @switch) match {
+      case 0 => Point(treeSet.from(cn.x).firstKey, cn.y)
+      case 180 => Point(treeSet.to(cn.x).lastKey, cn.y)
       case -90 => Point(cn.x, treeSet.to(cn.y).lastKey)
       case 90 => Point(cn.x, treeSet.from(cn.y).firstKey)
     }
@@ -107,15 +109,15 @@ object CornerLineAdjuster {
     CornerLine(cn.point, destination, cn.angle)
   }
 
-  def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])
-      : Map[String, List[Corner]] = {
+  def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
+      implicit extendVertically: Boolean): Map[String, List[Corner]] = {
 
     val destinationCorners: List[Corner] = corners
       .collect { case cn: CornerLine => cn.toListCorner.last }
 
     val toOpenClose: Map[String, List[Corner]] = corners
       .collect { case cn: Corner => cn }
-      .groupBy { cn => if (opened.contains(cn.y)) "toClose" else "toOpen" }
+      .groupBy { cn => if (opened.contains(cn.z)) "toClose" else "toOpen" }
 
     val toOpen: List[Corner] = destinationCorners ::: toOpenClose
       .getOrElse("toOpen", Nil)
@@ -129,16 +131,16 @@ object CornerLineAdjuster {
     Map("toOpen" -> toOpen, "toClose" -> toClose, "toExtend" -> toExtend)
   }
 
-  private def lineSweeper(container: LineContainer, corners: List[CornerGeometry])
-      : LineContainer = {
+  private def lineSweeper(container: LineContainer, corners: List[CornerGeometry])(
+      implicit extendVertically: Boolean): LineContainer = {
 
     val actions = setActions(corners, container.openedLines)
 
     val opened: TreeSet[Double] = container.openedLines ++
-      actions.getOrElse("toOpen", Nil).map(_.y)
+      actions.getOrElse("toOpen", Nil).map(_.z)
 
     val closed: TreeSet[Double] = opened --
-      actions.getOrElse("toClose", Nil).map(_.y)
+      actions.getOrElse("toClose", Nil).map(_.z)
 
     val extended: List[CornerLine] = actions
       .getOrElse("toExtend", Nil)
@@ -147,10 +149,11 @@ object CornerLineAdjuster {
     LineContainer(closed, extended ::: container.cornerLines)
   }
 
-  def adjustCornersLines(corners: List[CornerGeometry]): List[CornerLine] = {
+  def adjustCornersLines(corners: List[CornerGeometry])(
+      implicit extendVertically: Boolean): List[CornerLine] = {
 
     val lineContainer: LineContainer = corners
-      .groupBy(_.x)
+      .groupBy(_.z(!extendVertically))
       .toList
       .sortBy(_._1)
       .map(_._2)
