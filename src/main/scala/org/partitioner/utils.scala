@@ -13,7 +13,9 @@ object GeometryUtils {
       val holes: IndexedSeq[LinearRing] = for {i <- 0 until pg.getNumInteriorRing }
         yield pg.getInteriorRingN(i).asInstanceOf[LinearRing]
 
-      holes.map(geometryFactory.createPolygon(_)).toList
+      holes.map(geometryFactory.createPolygon).map(normalizePolygon).toList
     }
   }
+
+  def normalizePolygon(pg: Polygon): Polygon = pg.norm.asInstanceOf[Polygon]
 }
