@@ -1,7 +1,7 @@
 package org.partitioner
 
 import com.vividsolutions.jts.algorithm.Angle
-import com.vividsolutions.jts.geom.{Coordinate, LineString}
+import com.vividsolutions.jts.geom.{Coordinate, LineString, Polygon}
 
 
 case class Point(x: Double, y: Double)
@@ -39,6 +39,10 @@ object CornerOrderingY extends Ordering[CornerGeometry] {
 case class Rectangle(upperLeft: Point, lowerRight: Point) {
   def upperRight: Point = Point(lowerRight.x, upperLeft.y)
   def lowerLeft: Point = Point(upperLeft.x, lowerRight.y)
+  def toPolygon: Polygon = GeometryUtils.geometryFactory.createPolygon(
+    List(lowerLeft, upperLeft, upperRight, lowerRight, lowerLeft)
+      .map(p => new Coordinate(p.x, p.y)).toArray
+  )
 }
 
 
