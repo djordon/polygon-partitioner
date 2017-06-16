@@ -1,5 +1,7 @@
 package org.partitioner
 
+import GeometryUtils.normalizePolygon
+
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
 
@@ -9,6 +11,8 @@ import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
 import scala.language.reflectiveCalls
 import scala.io.Source
+
+
 
 
 trait PolygonFixtures {
@@ -95,6 +99,21 @@ trait PolygonFixtures {
     val holedPolygon1: Polygon = wktReader.read(
         Source.fromResource("holedPolygon1").getLines.toList.head
     ).asInstanceOf[Polygon]
+
+    val allPolygons: List[Polygon] = Source
+      .fromResource("")
+      .getLines
+      .filter(_ != "org")
+      .map(Source.fromResource(_).getLines.toList.head)
+      .map(wktReader.read(_).asInstanceOf[Polygon])
+      .map(normalizePolygon)
+      .toList
+
+    val allNames = Source
+      .fromResource("")
+      .getLines
+      .filter(_ != "org")
+      .toList
   }
 }
 

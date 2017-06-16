@@ -121,6 +121,26 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         partitions(1).length shouldEqual 5
         partitions(2).length shouldEqual 5
       }
+
+      "create rectangles that do not overlap with one another" in {
+        def testOverlap(polys: List[Polygon]): Seq[Boolean] = {
+          for {
+            i <- 0 until polys.length - 1
+            j <- i + 1 until polys.length
+          } yield polys(i).overlaps(polys(j))
+        }
+
+        val partitions: List[List[Polygon]] = fixtures.allPolygons
+          .map(OrthogonalPolygonPartitioner.partition)
+          .map(_.map(r => r.toPolygon))
+
+        val overlaps: List[Boolean] = partitions
+          .map(testOverlap)
+          .filter(_.length > 0)
+          .map(se => se.reduce(_ || _))
+
+        overlaps.reduce(_ || _) should be (false)
+      }
     }
   }
 }
