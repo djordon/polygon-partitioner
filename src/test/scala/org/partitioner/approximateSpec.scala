@@ -104,7 +104,6 @@ trait PolygonFixtures {
       .filter(_ != "org")
       .map(Source.fromResource(_).getLines.toList.head)
       .map(wktReader.read(_).asInstanceOf[Polygon])
-      .map(normalizePolygon)
       .toList
   }
 }
