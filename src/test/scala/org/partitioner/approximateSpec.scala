@@ -13,8 +13,6 @@ import scala.language.reflectiveCalls
 import scala.io.Source
 
 
-
-
 trait PolygonFixtures {
   val wktReader = new WKTReader()
 
@@ -107,12 +105,6 @@ trait PolygonFixtures {
       .map(Source.fromResource(_).getLines.toList.head)
       .map(wktReader.read(_).asInstanceOf[Polygon])
       .map(normalizePolygon)
-      .toList
-
-    val allNames = Source
-      .fromResource("")
-      .getLines
-      .filter(_ != "org")
       .toList
   }
 }
