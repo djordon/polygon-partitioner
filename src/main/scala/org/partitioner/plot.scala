@@ -15,10 +15,10 @@ object PolygonPlotter {
   def scatterLines(points: List[Point], markerColor: Color, markerLine: Line):
       Scatter = {
     Scatter(
-      values=points.map(_.x),
-      secondValues=points.map(_.y),
-      mode=ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
-      marker=Marker(color = markerColor, line = markerLine)
+      values = points.map(_.x),
+      secondValues = points.map(_.y),
+      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
+      marker = Marker(color = markerColor, line = markerLine)
     )
   }
 
@@ -26,9 +26,9 @@ object PolygonPlotter {
     val points: List[Point] = List(line.source, line.dest)
 
     List(scatterLines(
-      points=points,
-      markerColor=Color.RGBA(152, 0, 0, 0.8),
-      markerLine=Line(color = Color.RGBA(30, 0, 0, 1.0), width = 1.0)
+      points = points,
+      markerColor = Color.RGBA(152, 0, 0, 0.8),
+      markerLine = Line(color = Color.RGBA(30, 0, 0, 1.0), width = 1.0)
     ))
   }
 
@@ -62,19 +62,19 @@ object PolygonPlotter {
 
     val scatterPartial = scatterLines(
       _: List[Point],
-      markerColor=Color.RGBA(255, 153, 51, 0.8),
-      markerLine=Line(color = Color.RGBA(255, 153, 51, 0.8), width = 1.0)
+      markerColor = Color.RGBA(255, 153, 51, 0.8),
+      markerLine = Line(color = Color.RGBA(255, 153, 51, 0.8), width = 1.0)
     )
 
     (exterior :: interior).map(scatterPartial)
   }
 
   def quickPlot(
-                 polygons: List[Polygon],
-                 innerLines: List[CornerLine] = Nil,
-                 diagLines: List[Rectangle] = Nil,
-                 plotName: String = "quick",
-                 fileName: String = "quick.html"): File = {
+      polygons: List[Polygon],
+      innerLines: List[CornerLine] = Nil,
+      diagLines: List[Rectangle] = Nil,
+      plotName: String = "quick",
+      fileName: String = "quick.html"): File = {
 
     val scatters: List[Scatter] = polygons.flatMap(polygonPlotter) ++
       innerLines.flatMap(extendedCornerPlotter) ++
