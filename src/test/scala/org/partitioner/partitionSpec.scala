@@ -30,9 +30,9 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
         val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures.approximatedPolygon).head
+          .extractCorners(fixtures("approximatedPolygon")).head
 
-        val points: Iterable[Point] = fixtures.approximatedPolygon
+        val points: Iterable[Point] = fixtures("approximatedPolygon")
           .map(c => Point(c.x, c.y))
 
         corners.map(_.point).toSet shouldEqual points.toSet
@@ -40,7 +40,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
       "calculate predictable angles for the corners" in {
         val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures.approximatedPolygon).head
+          .extractCorners(fixtures("approximatedPolygon")).head
 
         val angles: List[Int] = List(0, 90, 0, 90, 0, -90, 180, 90, 0)
 
@@ -50,7 +50,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "partition" should {
       "extract non-degenerate rectangles from an orthogonal polygon" in {
-        val poly1: Polygon = fixtures.approximatedPolygon
+        val poly1: Polygon = fixtures("approximatedPolygon")
           .norm()
           .asInstanceOf[Polygon]
 
@@ -71,7 +71,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "create rectangles that union to the original polygon" in {
-        val poly: Polygon = fixtures.approximatedPolygon
+        val poly: Polygon = fixtures("approximatedPolygon")
           .norm()
           .asInstanceOf[Polygon]
 
@@ -96,10 +96,11 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
       "handle polygons with chords" in {
         val polygons: List[Polygon] = List(
-          fixtures.complexChordedPolygon1,
-          fixtures.complexChordedPolygon2,
-          fixtures.complexChordedPolygon3
-        )
+          "chordedPolygon1",
+          "chordedPolygon2",
+          "chordedPolygon3"
+        ).map(fixtures(_))
+
         val partitions = polygons
             .map(OrthogonalPolygonPartitioner.partition)
             .map(rectangles2Polygon)
@@ -110,10 +111,11 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
       "handle have very few partitions" in {
         val polygons: List[Polygon] = List(
-          fixtures.complexChordedPolygon1,
-          fixtures.complexChordedPolygon2,
-          fixtures.complexChordedPolygon3
-        )
+          "chordedPolygon1",
+          "chordedPolygon2",
+          "chordedPolygon3"
+        ).map(fixtures(_))
+
         val partitions: List[List[Rectangle]] = polygons
           .map(OrthogonalPolygonPartitioner.partition)
 
@@ -130,9 +132,10 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
           } yield polys(i).overlaps(polys(j))
         }
 
-        val partitions: List[List[Polygon]] = fixtures.allPolygons
+        val partitions: List[List[Polygon]] = fixtures.values
           .map(OrthogonalPolygonPartitioner.partition)
           .map(_.map(r => r.toPolygon))
+          .toList
 
         val overlaps: List[Boolean] = partitions
           .map(testOverlap)
@@ -151,7 +154,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
         val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures.approximatedPolygon).head
+          .extractCorners(fixtures("approximatedPolygon")).head
 
         val startsVertically: Boolean = corners.head.angle.abs != 90
         val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
@@ -177,7 +180,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
   "OrthogonalPolygonChordReducer" can {
     "computeIntersections" should {
       "find all intersection between horizontal and vertical chords" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
         val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
         val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
 
@@ -189,7 +192,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "find chords that intersect" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
         val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
         val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
 
@@ -213,7 +216,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "reduceChords" should {
       "return a subset of non-intersecting chords" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures.complexChordedPolygon1)
+        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
         val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
         val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
 
