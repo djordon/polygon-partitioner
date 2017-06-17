@@ -100,6 +100,7 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def point: Point = source.point
   def angle: Int = source.angle
   def toListCorner: List[Corner] = List(source, dest)
+  def toCornerLine: CornerLine = CornerLine(source.point, dest.point, source.angle)
 }
 
 case class Vec(coord: Coordinate, angle: Double)
