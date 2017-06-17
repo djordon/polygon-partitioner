@@ -45,13 +45,22 @@ object PolygonApproximator {
   }
 
   private def vecs2polygon(vecs: List[Vec]): Polygon = {
-    geometryFactory
-      .createPolygon(vecs.map(_.coord).toArray)
-      .norm
-      .asInstanceOf[Polygon]
+    geometryFactory.createPolygon(vecs.map(_.coord).toArray)
   }
 
-  def removeAxisAlignedColinearity: Polygon => Polygon = {
+  def removeAxisAlignedColinearity(pg: Polygon): Polygon = {
+    val shell: Polygon = removeAxisAlignedColinearitySimple(pg)
+    val holes: List[Polygon] = pg
+      .getHoles
+      .map(removeAxisAlignedColinearitySimple)
+
+    geometryFactory.createPolygon(
+      shell.getExteriorRing.asInstanceOf[LinearRing],
+      holes.map(_.getExteriorRing.asInstanceOf[LinearRing]).toArray
+    ).norm.asInstanceOf[Polygon]
+  }
+
+  private def removeAxisAlignedColinearitySimple: Polygon => Polygon = {
     polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _
   }
 
@@ -105,7 +114,7 @@ object OrthogonalPolygonBuilder {
       size: Int = 3,
       step: Int = 1): Polygon = {
 
-    val method: Polygon => Polygon = Function.chain(Seq(
+    val approximator: Polygon => Polygon = Function.chain(Seq(
       simplify(_: Polygon, simplifyTolerance),
       densify(_: Polygon, densifyTolerance),
       cover(_: Polygon, size, step)
@@ -113,8 +122,11 @@ object OrthogonalPolygonBuilder {
 
     val exterior: Polygon = geometryFactory.createPolygon(polygon.toArray)
     val approximated: List[LinearRing] = (exterior :: polygon.getHoles)
-      .map { method(_).getExteriorRing.asInstanceOf[LinearRing] }
+      .map { approximator(_).getExteriorRing.asInstanceOf[LinearRing] }
 
-    geometryFactory.createPolygon(approximated.head, approximated.tail.toArray)
+    geometryFactory
+      .createPolygon(approximated.head, approximated.tail.toArray)
+      .norm
+      .asInstanceOf[Polygon]
   }
 }
