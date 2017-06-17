@@ -27,13 +27,16 @@ trait PolygonFixtures {
       .asInstanceOf[Polygon]
   }
 
-  val fixtures: Map[String, Polygon] = Source
-    .fromResource("")
+  def loadDirectory(dir: String) : Map[String, Polygon] = Source
+    .fromResource(dir)
     .getLines
-    .filter(_ != "org")
-    .map(filename => (filename, Source.fromResource(filename).getLines.toList.head))
+    .map(f => (f, Source.fromResource(s"$dir/$f").getLines.toList.head))
     .toMap
     .mapValues(wktReader.read(_).asInstanceOf[Polygon])
+
+  val orthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("rectilinear")
+  val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("non-rectilinear")
+  val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }
 
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
