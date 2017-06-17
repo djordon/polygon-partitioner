@@ -169,6 +169,8 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  def partition: Polygon => List[Rectangle] =
-    normalizePolygon _ andThen extractCorners _ andThen makeRectangleCorners _ andThen extractRectangles _
+  def partition: Polygon => List[Rectangle] = (normalizePolygon _)
+    .andThen(extractCorners _)
+    .andThen(makeRectangleCorners _)
+    .andThen(extractRectangles _)
 }
