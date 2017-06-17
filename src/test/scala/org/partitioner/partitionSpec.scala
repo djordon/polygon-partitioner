@@ -10,7 +10,7 @@ import scala.language.reflectiveCalls
 
 
 class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
-  import GeometryUtils.IterablePolygon
+  import GeometryUtils.{IterablePolygon, normalizePolygon}
 
   def rectangles2Polygon(recs: List[Rectangle]): Polygon = {
     val envelopes: List[Geometry] = recs.map { r =>
@@ -71,27 +71,18 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "create rectangles that union to the original polygon" in {
-        val poly: Polygon = fixtures("approximatedPolygon")
-          .norm()
-          .asInstanceOf[Polygon]
+        val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
 
-        val recs: List[Rectangle] = OrthogonalPolygonPartitioner
-          .partition(poly)
+        val rectangles: List[List[Polygon]] = polygons
+          .map { OrthogonalPolygonPartitioner.partition }
+          .map { _.map(rec => rec.toPolygon) }
 
-        val envs: List[Geometry] = recs.map { r =>
-          List(new Coordinate(r.upperLeft.x, r.upperLeft.y),
-               new Coordinate(r.lowerRight.x, r.lowerRight.y))
-        }
-        .map(OrthogonalPolygonBuilder.coverCoordinates(_))
+        val reconstructedPolygons: List[Polygon] = rectangles
+          .map { geos => CascadedPolygonUnion.union(geos.asJavaCollection) }
+          .map { _.asInstanceOf[Polygon] }
+          .map { PolygonApproximator.removeAxisAlignedColinearity }
 
-        val union: Polygon = CascadedPolygonUnion
-          .union(envs.asJavaCollection)
-          .asInstanceOf[Polygon]
-
-        val simplifiedPolygon: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(union)
-
-        simplifiedPolygon shouldEqual poly
+        reconstructedPolygons shouldEqual polygons.map(normalizePolygon)
       }
 
       "handle polygons with chords" in {
