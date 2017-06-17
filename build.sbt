@@ -16,7 +16,8 @@ lazy val projectSettings = Seq(
 
   libraryDependencies ++= Seq(
     "com.vividsolutions" % "jts-core" % "1.14.0",
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.plotly-scala" %% "plotly-render" % "0.3.1"
   ),
 
   sourcesInBase := false,

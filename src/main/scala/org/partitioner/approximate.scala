@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LineString}
+import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LineString, LinearRing}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
 
@@ -111,6 +111,10 @@ object OrthogonalPolygonBuilder {
       cover(_: Polygon, size, step)
     ))
 
-    method(polygon)
+    val exterior: Polygon = geometryFactory.createPolygon(polygon.toArray)
+    val approximated: List[LinearRing] = (exterior :: polygon.getHoles)
+      .map { method(_).getExteriorRing.asInstanceOf[LinearRing] }
+
+    geometryFactory.createPolygon(approximated.head, approximated.tail.toArray)
   }
 }

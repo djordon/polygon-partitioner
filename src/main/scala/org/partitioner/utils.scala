@@ -1,6 +1,6 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.{GeometryCollection, GeometryFactory, Geometry, Polygon, Coordinate}
+import com.vividsolutions.jts.geom._
 
 
 object GeometryUtils {
@@ -12,8 +12,15 @@ object GeometryUtils {
   }
 
   implicit class IterablePolygon(val pg: Polygon) extends Iterable[Coordinate] {
-    override def iterator: Iterator[Coordinate] = pg.getCoordinates.toIterator
+    override def iterator: Iterator[Coordinate] = pg.getExteriorRing.getCoordinates.toIterator
+
+    def getHoles: List[Polygon] = {
+      val holes: IndexedSeq[LinearRing] = for {i <- 0 until pg.getNumInteriorRing }
+        yield pg.getInteriorRingN(i).asInstanceOf[LinearRing]
+
+      holes.map(geometryFactory.createPolygon(_)).toList
+    }
   }
 
-  def emptyPolygon: Polygon = (new GeometryFactory()).createPolygon(Array[Coordinate]())
+  def emptyPolygon: Polygon = geometryFactory.createPolygon(Array[Coordinate]())
 }

@@ -38,7 +38,10 @@ object CornerOrderingY extends Ordering[CornerPoint] {
 }
 
 
-case class Rectangle(upperLeft: Point, lowerRight: Point)
+case class Rectangle(upperLeft: Point, lowerRight: Point) {
+  def upperRight: Point = Point(lowerRight.x, upperLeft.y)
+  def lowerLeft: Point = Point(upperLeft.x, lowerRight.y)
+}
 
 
 trait CornerPoint {
@@ -56,8 +59,8 @@ case class ExtendedCorner(source: Point, dest: Point, angle: Int) extends Corner
   def isConcave: Boolean = true
   def point: Point = source
   def swap: ExtendedCorner = ExtendedCorner(dest, source, oppositeAngle)
-  def toListCorner(destConcave: Boolean = false): List[Corner] = {
-    List(Corner(source, true, angle), Corner(dest, destConcave, oppositeAngle))
+  def toListCorner: List[Corner] = {
+    List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
   }
   def toLineString: LineString = {
     GeometryUtils.geometryFactory.createLineString(
