@@ -1,7 +1,7 @@
 package org.partitioner
 
-import com.vividsolutions.jts.algorithm.Angle
-import com.vividsolutions.jts.geom.{Coordinate, LineString, Polygon}
+import com.vividsolutions.jts.algorithm.{Angle => AngleJTS}
+import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 
 
 case class Point(x: Double, y: Double)
@@ -71,10 +71,10 @@ object Corner {
   )
 
   def edgeDirection(vec: List[Coordinate]): Int = 
-    Angle.toDegrees(Angle.angle(vec.head, vec.last)).toInt
+    AngleJTS.toDegrees(AngleJTS.angle(vec.head, vec.last)).toInt
 
   def isConcaveCorner(corner: List[Coordinate]): Boolean =
-    Angle.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
+    AngleJTS.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
 
 
@@ -86,12 +86,6 @@ case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeom
   def swap: CornerLine = CornerLine(dest, source, oppositeAngle)
   def toListCorner: List[Corner] = {
     List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
-  }
-  def toLineString: LineString = {
-    GeometryUtils.geometryFactory.createLineString(
-      Array(new Coordinate(source.x, source.y),
-        new Coordinate(dest.x, dest.y))
-    )
   }
 }
 
@@ -106,12 +100,6 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def point: Point = source.point
   def angle: Int = source.angle
   def toListCorner: List[Corner] = List(source, dest)
-  def toLineString: LineString = {
-    GeometryUtils.geometryFactory.createLineString(
-      Array(new Coordinate(source.x, source.y),
-        new Coordinate(dest.x, dest.y))
-    )
-  }
 }
 
 case class Vec(coord: Coordinate, angle: Double)
@@ -119,5 +107,5 @@ case class Vec(coord: Coordinate, angle: Double)
 
 object Vec {
   def apply(a: List[Coordinate]) = 
-    new Vec(a(1), Angle.toDegrees(Angle.angle(a.head, a.tail.head)))
+    new Vec(a(1), AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
 }
