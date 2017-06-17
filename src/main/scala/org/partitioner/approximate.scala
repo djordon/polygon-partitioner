@@ -49,13 +49,13 @@ object PolygonApproximator {
   }
 
   def removeAxisAlignedColinearity(pg: Polygon): Polygon = {
-    val boundary: Polygon = removeAxisAlignedColinearitySimple(pg)
+    val shell: Polygon = removeAxisAlignedColinearitySimple(pg)
     val holes: List[Polygon] = pg
       .getHoles
       .map(removeAxisAlignedColinearitySimple)
 
     geometryFactory.createPolygon(
-      boundary.getExteriorRing.asInstanceOf[LinearRing],
+      shell.getExteriorRing.asInstanceOf[LinearRing],
       holes.map(_.getExteriorRing.asInstanceOf[LinearRing]).toArray
     ).norm.asInstanceOf[Polygon]
   }
