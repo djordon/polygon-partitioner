@@ -20,7 +20,7 @@ object OrthogonalPolygonChordReducer {
   }
 
   def setActions(corners: List[CornerGeometry], opened: TreeMap[Double, Corner])
-  : Map[String, List[CornerGeometry]] = {
+      : Map[String, List[CornerGeometry]] = {
 
     val toOpenClose: Map[String, List[Corner]] = corners
       .collect { case c: Corner => c }
@@ -30,11 +30,11 @@ object OrthogonalPolygonChordReducer {
       .toList
       .groupBy(cn => if (opened contains cn.y) "toClose" else "toOpen")
 
-    toOpenClose + ("toExtend" -> corners.collect { case ch: Chord => ch })
+    toOpenClose + ("toIntersect" -> corners.collect { case ch: Chord => ch })
   }
 
   private def lineSweeper(container: ChordContainer, cgs: List[CornerGeometry])
-  : ChordContainer = {
+      : ChordContainer = {
 
     val actions = setActions(cgs, container.openedCorners)
 
@@ -49,7 +49,7 @@ object OrthogonalPolygonChordReducer {
       actions.getOrElse("toClose", Nil).map(_.y)
 
     val intersections: Map[Chord, Set[Corner]] = actions
-      .getOrElse("toExtend", Nil)
+      .getOrElse("toIntersect", Nil)
       .asInstanceOf[List[Chord]]
       .map(intersecting(opened))
       .toMap
