@@ -47,14 +47,14 @@ case class Rectangle(upperLeft: Point, lowerRight: Point) {
 
 
 trait CornerGeometry {
+  def angle: Int
   def isConcave: Boolean
   def point: Point
-  def angle: Int
+  def toListCorner: List[CornerGeometry]
+  def w: Double = if (angle.abs == 90) y else x
   def x: Double = point.x
   def y: Double = point.y
   def z(implicit vertical: Boolean): Double = if (vertical) y else x
-  def w: Double = if (angle.abs == 90) y else x
-  def toListCorner: List[CornerGeometry]
 }
 
 
@@ -92,14 +92,16 @@ case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeom
 
 case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   lazy val left: Corner = if (source.x < dest.x) source else dest
-  def yMax: Double = if (source.y > dest.y) source.y else dest.y
-  def yMin: Double = if (source.y < dest.y) source.y else dest.y
-  def xMax: Double = if (source.x > dest.x) source.x else dest.x
-  def xMin: Double = if (source.x < dest.x) source.x else dest.x
+
+  def angle: Int = source.angle
   def isConcave: Boolean = true
   def point: Point = source.point
-  def angle: Int = source.angle
+  def toCornerLine: CornerLine = CornerLine(source.point, dest.point, source.angle)
   def toListCorner: List[Corner] = List(source, dest)
+  def xMax: Double = if (source.x > dest.x) source.x else dest.x
+  def xMin: Double = if (source.x < dest.x) source.x else dest.x
+  def yMax: Double = if (source.y > dest.y) source.y else dest.y
+  def yMin: Double = if (source.y < dest.y) source.y else dest.y
 }
 
 case class Vec(coord: Coordinate, angle: Double)

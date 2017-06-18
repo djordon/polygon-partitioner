@@ -134,6 +134,7 @@ object OrthogonalPolygonPartitioner {
 
     val lines: List[CornerLine] = (vEdges ::: hEdges) collect {
       case ec: CornerLine if !chordPoints.contains(ec.source) => ec
+      case ch: Chord if !(chordPoints contains ch.point) => ch.toCornerLine
     }
 
     val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
