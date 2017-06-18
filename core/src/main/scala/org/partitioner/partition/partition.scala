@@ -4,7 +4,7 @@ import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 import org.partitioner._
 
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
-
+import scala.language.implicitConversions
 
 case class EndpointStacks(
     upperLeft: List[Point] = Nil,
@@ -50,6 +50,7 @@ object RectangleEndpointExtractor {
       case CornerLine(s, d, 90) => stacks.prepend(ul=d, lr=s)
       case CornerLine(s, d, 180) => stacks.prepend(ul=d, ll=d)
       case CornerLine(s, d, -90) => stacks.prepend(ul=s, ll=d, lr=d)
+      case _ => stacks
     }
   }
 
@@ -72,6 +73,7 @@ object RectangleEndpointExtractor {
       case Chord(Corner(s, _, 180), Corner(d, _, 0)) => stacks.prepend(ll=d)
       case Chord(Corner(s, _, 0), Corner(d, _, 180)) => stacks.prepend(ll=s)
       case Chord(Corner(s, _, 0), Corner(d, _, -90)) => stacks.prepend(ll=s, lr=d)
+      case _ => stacks
     }
   }
 
