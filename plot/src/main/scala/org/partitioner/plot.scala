@@ -1,8 +1,10 @@
-package org.partitioner
+package org.partitioner.plot
 
 import java.io.File
 
 import com.vividsolutions.jts.geom.Polygon
+
+import org.partitioner._
 
 import plotly.element.{Color, Line, Marker, ScatterMode, Fill}
 import plotly.layout.{Axis, Layout}
@@ -72,13 +74,15 @@ object PolygonPlotter {
   def quickPlot(
       polygons: List[Polygon],
       innerLines: List[CornerLine] = Nil,
-      diagLines: List[Rectangle] = Nil,
+      rectangles: List[Rectangle] = Nil,
       plotName: String = "quick",
       fileName: String = "quick.html"): File = {
 
-    val scatters: List[Scatter] = polygons.flatMap(polygonPlotter) ++
-      innerLines.flatMap(extendedCornerPlotter) ++
-      diagLines.flatMap(rectanglePlotter)
+    val scatters: List[Scatter] = {
+        polygons.flatMap(polygonPlotter) ++
+        innerLines.flatMap(extendedCornerPlotter) ++
+        rectangles.flatMap(rectanglePlotter)
+    }
 
     val layout = Layout(
       title = plotName,
