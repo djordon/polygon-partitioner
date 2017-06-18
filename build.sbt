@@ -9,7 +9,10 @@ val commonSettings = Seq(
   scalacOptions ++= Seq("-target:jvm-1.8", "-feature")
 )
 
-lazy val root = (project in file(".")).aggregate(core, plot, db)
+lazy val root = (project in file("."))
+  .settings(commonSettings: _*)
+  .aggregate(core, plot, db)
+  .dependsOn(core, plot, db)
 
 lazy val core = (project in file("core"))
   .settings(commonSettings: _*)
