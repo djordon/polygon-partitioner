@@ -87,10 +87,6 @@ object OrthogonalPolygonChordReducer {
     val chordsL: List[Chord] = intersections.map(_._1).distinct
     val chordsR: List[Chord] = intersections.map(_._2).distinct
 
-    println(chordsL)
-    println(chordsR)
-    println(chords.filterNot(all.contains(_)))
-    println((chordsL.length, chordsR.length))
     if (chordsL.length > chordsR.length)
       chordsL ::: chords.filterNot(all.contains(_))
     else

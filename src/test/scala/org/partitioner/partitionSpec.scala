@@ -27,51 +27,51 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   }
 
   "OrthogonalPolygonPartitioner" can {
-//    "extractCorners" should {
-//      "create a corner for each coordinate in a polygon" in {
-//        val corners: List[Corner] = CornerExtractor
-//          .extractCorners(fixtures("approximatedPolygon")).head
-//
-//        val points: Iterable[Point] = fixtures("approximatedPolygon")
-//          .map(c => Point(c.x, c.y))
-//
-//        corners.map(_.point).toSet shouldEqual points.toSet
-//      }
-//
-//      "calculate predictable angles for the corners" in {
-//        val corners: List[Corner] = CornerExtractor
-//          .extractCorners(fixtures("approximatedPolygon")).head
-//
-//        val angles: List[Int] = List(0, 90, 0, 90, 0, -90, 180, 90, 0)
-//
-//        corners.map(_.angle) shouldEqual angles
-//      }
-//    }
+    "extractCorners" should {
+      "create a corner for each coordinate in a polygon" in {
+        val corners: List[Corner] = CornerExtractor
+          .extractCorners(fixtures("approximatedPolygon")).head
+
+        val points: Iterable[Point] = fixtures("approximatedPolygon")
+          .map(c => Point(c.x, c.y))
+
+        corners.map(_.point).toSet shouldEqual points.toSet
+      }
+
+      "calculate predictable angles for the corners" in {
+        val corners: List[Corner] = CornerExtractor
+          .extractCorners(fixtures("approximatedPolygon")).head
+
+        val angles: List[Int] = List(0, 90, 0, 90, 0, -90, 180, 90, 0)
+
+        corners.map(_.angle) shouldEqual angles
+      }
+    }
 
     "partition" should {
-//      "extract non-degenerate rectangles from an orthogonal polygon" in {
-//        val poly1: Polygon = fixtures("approximatedPolygon")
-//          .norm()
-//          .asInstanceOf[Polygon]
-//
-//        val recs1: List[Rectangle] = OrthogonalPolygonPartitioner
-//          .partition(poly1)
-//
-//        def isRectangle(rec: Rectangle): Boolean = {
-//          (rec.upperLeft.x != rec.lowerRight.x) &&
-//          (rec.upperLeft.y != rec.lowerRight.y)
-//        }
-//
-//        recs1.map(isRectangle).reduce(_ && _) should be (true)
-//
-//        val poly2: Polygon = OrthogonalPolygonBuilder.cover(generatePolygon())
-//        val recs2: List[Rectangle] = OrthogonalPolygonPartitioner.partition(poly2)
-//
-//        recs2.map(isRectangle).reduce(_ && _) should be (true)
-//      }
+      "extract non-degenerate rectangles from an orthogonal polygon" in {
+        val poly1: Polygon = fixtures("approximatedPolygon")
+          .norm()
+          .asInstanceOf[Polygon]
+
+        val recs1: List[Rectangle] = OrthogonalPolygonPartitioner
+          .partition(poly1)
+
+        def isRectangle(rec: Rectangle): Boolean = {
+          (rec.upperLeft.x != rec.lowerRight.x) &&
+          (rec.upperLeft.y != rec.lowerRight.y)
+        }
+
+        recs1.map(isRectangle).reduce(_ && _) should be (true)
+
+        val poly2: Polygon = OrthogonalPolygonBuilder.cover(generatePolygon())
+        val recs2: List[Rectangle] = OrthogonalPolygonPartitioner.partition(poly2)
+
+        recs2.map(isRectangle).reduce(_ && _) should be (true)
+      }
 
       "create rectangles that union to the original polygon" in {
-        val polygons: List[Polygon] = List(orthogonalPolygonFixtures("complexPolygon0"))//.map(_._2)
+        val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
 
         val rectangles: List[List[Polygon]] = polygons
           .map { OrthogonalPolygonPartitioner.partition }
@@ -85,56 +85,56 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         reconstructedPolygons shouldEqual polygons.map(normalizePolygon)
       }
 
-//      "handle polygons with chords" in {
-//        val polygons: List[Polygon] = List(
-//          "chordedPolygon1",
-//          "chordedPolygon2",
-//          "chordedPolygon3"
-//        ).map(fixtures(_))
-//
-//        val partitions = polygons
-//            .map(OrthogonalPolygonPartitioner.partition)
-//            .map(rectangles2Polygon)
-//
-//        for (partitionPolygon <- partitions zip polygons)
-//          partitionPolygon._1 shouldEqual partitionPolygon._2
-//      }
-//
-//      "handle have very few partitions" in {
-//        val polygons: List[Polygon] = List(
-//          "chordedPolygon1",
-//          "chordedPolygon2",
-//          "chordedPolygon3"
-//        ).map(fixtures(_))
-//
-//        val partitions: List[List[Rectangle]] = polygons
-//          .map(OrthogonalPolygonPartitioner.partition)
-//
-//        partitions(0).length shouldEqual 4
-//        partitions(1).length shouldEqual 5
-//        partitions(2).length shouldEqual 5
-//      }
-//
-//      "create rectangles that do not overlap with one another" in {
-//        def testOverlap(polys: List[Polygon]): Seq[Boolean] = {
-//          for {
-//            i <- 0 until polys.length - 1
-//            j <- i + 1 until polys.length
-//          } yield polys(i).overlaps(polys(j))
-//        }
-//
-//        val partitions: List[List[Polygon]] = fixtures.values
-//          .map(OrthogonalPolygonPartitioner.partition)
-//          .map(_.map(r => r.toPolygon))
-//          .toList
-//
-//        val overlaps: List[Boolean] = partitions
-//          .map(testOverlap)
-//          .filter(_.length > 0)
-//          .map(se => se.reduce(_ || _))
-//
-//        overlaps.reduce(_ || _) should be (false)
-//      }
+      "handle polygons with chords" in {
+        val polygons: List[Polygon] = List(
+          "chordedPolygon1",
+          "chordedPolygon2",
+          "chordedPolygon3"
+        ).map(fixtures(_))
+
+        val partitions = polygons
+            .map(OrthogonalPolygonPartitioner.partition)
+            .map(rectangles2Polygon)
+
+        for (partitionPolygon <- partitions zip polygons)
+          partitionPolygon._1 shouldEqual partitionPolygon._2
+      }
+
+      "handle have very few partitions" in {
+        val polygons: List[Polygon] = List(
+          "chordedPolygon1",
+          "chordedPolygon2",
+          "chordedPolygon3"
+        ).map(fixtures(_))
+
+        val partitions: List[List[Rectangle]] = polygons
+          .map(OrthogonalPolygonPartitioner.partition)
+
+        partitions(0).length shouldEqual 4
+        partitions(1).length shouldEqual 5
+        partitions(2).length shouldEqual 5
+      }
+
+      "create rectangles that do not overlap with one another" in {
+        def testOverlap(polys: List[Polygon]): Seq[Boolean] = {
+          for {
+            i <- 0 until polys.length - 1
+            j <- i + 1 until polys.length
+          } yield polys(i).overlaps(polys(j))
+        }
+
+        val partitions: List[List[Polygon]] = fixtures.values
+          .map(OrthogonalPolygonPartitioner.partition)
+          .map(_.map(r => r.toPolygon))
+          .toList
+
+        val overlaps: List[Boolean] = partitions
+          .map(testOverlap)
+          .filter(_.length > 0)
+          .map(se => se.reduce(_ || _))
+
+        overlaps.reduce(_ || _) should be (false)
+      }
     }
   }
 }
