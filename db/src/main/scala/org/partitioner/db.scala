@@ -1,7 +1,5 @@
 package org.partitioner.db
 
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.geom.MultiPolygon
 
@@ -9,7 +7,7 @@ import doobie.imports._
 import scalaz.concurrent.Task
 
 
-case class MultiPolygonZip(zipcode: String, multipolygon: MultiPolygon) {}
+case class MultiPolygonZip(zipcode: String, multipolygon: MultiPolygon)
 
 
 object PolygonExtractor {
