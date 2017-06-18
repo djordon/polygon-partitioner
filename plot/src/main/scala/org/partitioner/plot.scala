@@ -24,7 +24,7 @@ object PolygonPlotter {
     )
   }
 
-  def extendedCornerPlotter(line: CornerLine): List[Scatter] = {
+  def cornerLinePlotter(line: CornerLine): List[Scatter] = {
     val points: List[Point] = List(line.source, line.dest)
 
     List(scatterLines(
@@ -76,21 +76,24 @@ object PolygonPlotter {
       innerLines: List[CornerLine] = Nil,
       rectangles: List[Rectangle] = Nil,
       plotName: String = "quick",
-      fileName: String = "quick.html"): File = {
+      fileName: String = "quick.html",
+      plotLayout: Option[Layout] = None): File = {
 
     val scatters: List[Scatter] = {
         polygons.flatMap(polygonPlotter) ++
-        innerLines.flatMap(extendedCornerPlotter) ++
+        innerLines.flatMap(cornerLinePlotter) ++
         rectangles.flatMap(rectanglePlotter)
     }
 
     val layout = Layout(
       title = plotName,
-      xaxis = Axis(showgrid=true),
-      yaxis = Axis(showgrid=true),
+      xaxis = Axis(showgrid = true, showticklabels = false),
+      yaxis = Axis(showgrid = true, showticklabels = false),
       width = 600,
-      height = 600
+      height = 600,
+      showlegend = false
     )
-    Plotly.plot(fileName, scatters, layout)
+
+    Plotly.plot(fileName, scatters, plotLayout.getOrElse(layout))
   }
 }
