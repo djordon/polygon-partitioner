@@ -7,12 +7,25 @@ import com.vividsolutions.jts.geom.Polygon
 import org.partitioner._
 
 import plotly.element.{Color, Line, Marker, ScatterMode, Fill, Dash}
-import plotly.layout.{Axis, Layout}
+import plotly.layout.{Axis, Layout, HoverMode, Margin}
 import plotly.{Plotly, Scatter}
 
 
 object PolygonPlotter {
   import GeometryUtils.IterablePolygon
+
+  val defaultLayout = Layout(
+    title = "",
+    xaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
+    yaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
+    width = 550,
+    height = 550,
+    showlegend = false,
+    plot_bgcolor = Color.RGBA(0, 0, 0, 0),
+    paper_bgcolor = Color.RGBA(0, 0, 0, 0),
+    hovermode = HoverMode.Closest,
+    margin = Margin(l = 15, r = 15, t = 15, b = 15)
+  )
 
   def scatterLines(points: List[Point], markerColor: Color, markerLine: Line, mode: Option[ScatterMode] = None):
       Scatter = {
@@ -80,9 +93,9 @@ object PolygonPlotter {
       polygons: List[Polygon],
       innerLines: List[CornerLine] = Nil,
       rectangles: List[Rectangle] = Nil,
-      plotName: Option[String] = Some("quick"),
+      title: String = "",
       fileName: String = "quick.html",
-      plotLayout: Option[Layout] = None): File = {
+      plotLayout: Layout = defaultLayout): File = {
 
     val scatters: List[Scatter] = {
       rectangles.flatMap(rectanglePlotter) ++
@@ -90,17 +103,6 @@ object PolygonPlotter {
       polygons.flatMap(polygonPlotter)
     }
 
-    val layout = Layout(
-      title = plotName.getOrElse(""),
-      xaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
-      yaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
-      width = 600,
-      height = 600,
-      showlegend = false,
-      plot_bgcolor = Color.RGBA(0, 0, 0, 0),
-      paper_bgcolor = Color.RGBA(0, 0, 0, 0)
-    )
-
-    Plotly.plot(fileName, scatters, plotLayout.getOrElse(layout))
+    Plotly.plot(fileName, scatters, plotLayout.copy(title = Some(title)))
   }
 }
