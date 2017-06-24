@@ -44,12 +44,13 @@ trait PlotDefaults {
 
 object PolygonPlotter extends PlotDefaults {
   import GeometryUtils.IterablePolygon
+  import plotly.Sequence.Doubles
 
   def pointScatter(
       points: List[Point],
       marker: Marker,
       text: Option[Seq[String]] = None,
-      mode: Option[ScatterMode] = None,
+      mode: Option[ScatterMode] = Some(ScatterMode(ScatterMode.Lines)),
       line: Option[Line] = None,
       textPosition: Option[TextPosition] = None,
       textFont: Option[TextFont] = None,
@@ -60,19 +61,21 @@ object PolygonPlotter extends PlotDefaults {
       fill: Option[Fill]= None): Scatter = {
 
     Scatter(
-      values = points.map(_.x),
-      secondValues = points.map(_.y),
-      mode = mode getOrElse ScatterMode(ScatterMode.Lines),
-      marker = marker,
-      text = text.get,
-      line = line.get,
-      textposition = textPosition.get,
-      textfont = textFont.get,
-      name = name.get,
-      connectgaps = connectGaps.get,
-      xaxis = xAxis.get,
-      yaxis = yAxis.get,
-      fill = fill.get
+      x = Some(Doubles(points.map(_.x))),
+      y = Some(Doubles(points.map(_.y))),
+      mode = mode,
+      marker = Some(marker),
+      text = text,
+      line = line,
+      textposition = textPosition,
+      textfont = textFont,
+      name = name,
+      connectgaps = connectGaps,
+      xaxis = xAxis,
+      yaxis = yAxis,
+      fill = fill,
+      error_x = Option(null),
+      error_y = Option(null)
     )
   }
 
