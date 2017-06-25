@@ -80,16 +80,21 @@ object OrthogonalPolygonChordReducer {
       .flatMap { kv => kv._2.map { (_, kv._1) } }
   }
 
+  def removeDuplicateChords(chords: List[Chord]): List[Chord] = chords
+    .foldLeft(Set[Chord]()) { (set, ch) => if (set contains ch.swap) set else set + ch }
+    .toList
+
   def reduceChords(chords: List[Chord]): List[Chord] = {
-    val intersections: List[(Chord, Chord)] = computeIntersections(chords)
+    val distinctChords: List[Chord] = removeDuplicateChords(chords)
+    val intersections: List[(Chord, Chord)] = computeIntersections(distinctChords)
 
     val all: Set[Chord] = intersections.flatMap(t => List(t._1, t._2)).toSet
     val chordsL: List[Chord] = intersections.map(_._1).distinct
     val chordsR: List[Chord] = intersections.map(_._2).distinct
 
     if (chordsL.length > chordsR.length)
-      chordsL ::: chords.filterNot(all.contains(_))
+      chordsL ::: distinctChords.filterNot(all.contains(_))
     else
-      chordsR ::: chords.filterNot(all.contains(_))
+      chordsR ::: distinctChords.filterNot(all.contains(_))
   }
 }
