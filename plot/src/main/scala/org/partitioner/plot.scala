@@ -113,7 +113,7 @@ object PolygonPlotter extends PlotDefaults {
       polygon: Polygon,
       marker: Marker = boundaryMarker): List[Scatter] = {
 
-    val interior: List[List[Point]] = polygon.getHoles.map(_.toList.map(Point.apply))
+    val interior: List[List[Point]] = polygon.getHolesCoordinates.map(_.map(Point.apply))
     val exterior: List[Point] = polygon.toList.map(Point.apply)
 
     val partialScatter = pointScatter(
