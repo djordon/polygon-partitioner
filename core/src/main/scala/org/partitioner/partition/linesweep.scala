@@ -43,7 +43,7 @@ trait RectilinearLineSweeping {
     LineContainer(closed, adjusted ::: lines.cornerLines)
   }
 
-  def adjustCornersGeometries(corners: List[CornerGeometry])(
+  def adjustCornerGeometries(corners: List[CornerGeometry])(
     implicit vertical: Boolean): List[CornerLine] = {
 
     val lineContainer: LineContainer = corners
@@ -88,11 +88,6 @@ object OrthogonalPolygonCornerExtender extends RectilinearLineSweeping {
     }
   }
 
-  private def uniqueExtendedCorners(set: Set[CornerLine], ec: CornerLine)
-      : Set[CornerLine] = {
-    if (set contains ec.swap) set else set + ec
-  }
-
   def extendCorners(corners: List[Corner])(
     implicit extendVertically: Boolean): List[CornerGeometry] = {
 
@@ -101,10 +96,7 @@ object OrthogonalPolygonCornerExtender extends RectilinearLineSweeping {
       .map(cn => (cn.point, cn))
       .toMap
 
-    adjustCornersGeometries(corners)
-      .foldLeft(Set[CornerLine]())(uniqueExtendedCorners)
-      .toList
-      .map { makeChord(concavePointMap)(_) }
+    adjustCornerGeometries(corners).toList.map { makeChord(concavePointMap)(_) }
   }
 }
 
