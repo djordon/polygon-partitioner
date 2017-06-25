@@ -3,6 +3,7 @@ package org.partitioner.partition
 import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 import org.partitioner._
 
+import scala.annotation.tailrec
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
 import scala.language.implicitConversions
 
@@ -34,7 +35,7 @@ object CornerExtractor {
 
   def extractCorners(polygon: Polygon): List[List[Corner]] = {
     val boundary: List[Coordinate] = polygon.toList.tail
-    val holes: List[List[Coordinate]] = polygon.getHoles.map(_.toList.tail.reverse)
+    val holes: List[List[Coordinate]] = polygon.getHolesCoordinates.map(_.tail)
 
     (boundary :: holes).map(makeCorners)
   }
@@ -63,6 +64,7 @@ object RectangleEndpointExtractor {
     }
   }
 
+//  @tailrec
   private def stackChord(ch: Chord, stacks: EndpointStacks): EndpointStacks = {
     ch match {
       case Chord(Corner(s, _, 90), Corner(d, _, 0)) => stacks.prepend(lr=s)
@@ -73,7 +75,7 @@ object RectangleEndpointExtractor {
       case Chord(Corner(s, _, 180), Corner(d, _, 0)) => stacks.prepend(ll=d)
       case Chord(Corner(s, _, 0), Corner(d, _, 180)) => stacks.prepend(ll=s)
       case Chord(Corner(s, _, 0), Corner(d, _, -90)) => stacks.prepend(ll=s, lr=d)
-      case _ => stacks
+      case _ => stacks //stackChord(ch.swap, stacks)
     }
   }
 
@@ -97,20 +99,13 @@ object OrthogonalPolygonPartitioner {
   import CornerExtractor.extractCorners
   import GeometryUtils.normalizePolygon
   import RectangleEndpointExtractor.extractRectangleEndpoints
+  import OrthogonalPolygonCornerExtender.extendCorners
   import scala.language.implicitConversions
 
-  def orderCorners(corners: List[Corner], vertically: Boolean): List[Corner] = {
-    val startsVertically: Boolean = corners.head.angle.abs != 90
-    if (startsVertically == vertically) corners.init else corners.tail
-  }
+  def createInteriorLines(corners: List[List[Corner]]): List[CornerGeometry] = {
+    val co: List[Corner] = corners.flatMap(_.tail)
 
-  def extractInternalEdges(corners: List[List[Corner]], verticals: Boolean)
-      : List[CornerGeometry] = {
-
-    val co: List[Corner] = corners.flatMap(orderCorners(_, vertically = verticals))
-
-    OrthogonalPolygonCornerExtender
-      .extendCorners(co)(extendVertically = !verticals)
+    extendCorners(co)(true) ::: extendCorners(co)(false)
   }
 
   def extractChordCorners(chords: List[Chord], vertical: Boolean): List[Corner] = {
@@ -120,13 +115,11 @@ object OrthogonalPolygonPartitioner {
       .map { _.copy(isConcave = false) }
   }
 
-  def makeRectangleCorners(corners: List[List[Corner]]): List[CornerGeometry] = {
-
-    val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
-    val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
+  def separateChordsCornerLines(interiorLines: List[CornerGeometry])
+      : (List[Chord], List[CornerLine]) = {
 
     val chords: List[Chord] = OrthogonalPolygonChordReducer.reduceChords {
-      (vEdges ::: hEdges) collect { case c: Chord => c }
+      interiorLines collect { case c: Chord => c }
     }
 
     val chordPoints: Set[Point] = chords
@@ -134,17 +127,28 @@ object OrthogonalPolygonPartitioner {
       .map(_.point)
       .toSet
 
-    val lines: List[CornerLine] = (vEdges ::: hEdges) collect {
+    val lines: List[CornerLine] = interiorLines collect {
       case ec: CornerLine if !chordPoints.contains(ec.source) => ec
       case ch: Chord if !(chordPoints contains ch.point) => ch.toCornerLine
     }
 
+    (chords, lines)
+  }
+
+  def createChordsCornerLines: List[List[Corner]] => (List[Chord], List[CornerLine]) = {
+    (createInteriorLines _) andThen (separateChordsCornerLines _)
+  }
+
+  def makeRectangleCorners(corners: List[List[Corner]]): List[CornerGeometry] = {
+
+    val (chords, lines) = createChordsCornerLines(corners)
     val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
-    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
+
+    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
       { lines.filter(_.angle.abs != 90) ::: extractChordCorners(chords, true) }
       { false }
 
-    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
+    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
       { horizontalLines.flatMap(_.toListCorner) :::
           lines.filter(_.angle.abs == 90) :::
           extractChordCorners(chords, false) }
