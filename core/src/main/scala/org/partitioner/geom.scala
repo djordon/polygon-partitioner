@@ -47,12 +47,13 @@ case class Rectangle(upperLeft: Point, lowerRight: Point) {
 
 
 trait CornerGeometry {
+  val pointsVertically: Boolean = angle.abs == 90
   def angle: Int
   def isConcave: Boolean
   def oppositeAngle: Int = ((angle + 270) % 360) - 90
   def point: Point
   def toListCorner: List[CornerGeometry]
-  def w: Double = if (angle.abs == 90) y else x
+  def w: Double = if (pointsVertically) y else x
   def x: Double = point.x
   def y: Double = point.y
   def z(implicit vertical: Boolean): Double = if (vertical) y else x
