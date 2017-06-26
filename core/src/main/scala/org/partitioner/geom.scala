@@ -83,7 +83,6 @@ object Corner {
 case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeometry {
   def isConcave: Boolean = true
   def point: Point = source
-  def swap: CornerLine = CornerLine(dest, source, oppositeAngle)
   def toListCorner: List[Corner] = {
     List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
   }
