@@ -75,7 +75,7 @@ object OrthogonalPolygonCornerExtender extends RectilinearLineSweeping {
       .groupBy(cn => if (opened.contains(cn.z)) "toClose" else "toOpen")
 
     val toAdjust: List[CornerGeometry] = corners filter { cn =>
-      (extendVertically == (cn.angle.abs == 90)) && cn.isConcave
+      (extendVertically == cn.pointsVertically) && cn.isConcave
     }
 
     toOpenClose + ("toAdjust" -> toAdjust)

@@ -3,7 +3,6 @@ package org.partitioner.partition
 import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 import org.partitioner._
 
-import scala.annotation.tailrec
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
 import scala.language.implicitConversions
 
@@ -64,7 +63,6 @@ object RectangleEndpointExtractor {
     }
   }
 
-//  @tailrec
   private def stackChord(ch: Chord, stacks: EndpointStacks): EndpointStacks = {
     ch match {
       case Chord(Corner(s, _, 90), Corner(d, _, 0)) => stacks.prepend(lr=s)
@@ -75,7 +73,7 @@ object RectangleEndpointExtractor {
       case Chord(Corner(s, _, 180), Corner(d, _, 0)) => stacks.prepend(ll=d)
       case Chord(Corner(s, _, 0), Corner(d, _, 180)) => stacks.prepend(ll=s)
       case Chord(Corner(s, _, 0), Corner(d, _, -90)) => stacks.prepend(ll=s, lr=d)
-      case _ => stacks //stackChord(ch.swap, stacks)
+      case _ => stacks
     }
   }
 
@@ -110,7 +108,7 @@ object OrthogonalPolygonPartitioner {
 
   def extractChordCorners(chords: List[Chord], vertical: Boolean): List[Corner] = {
     chords
-      .filter { ch => (ch.angle.abs == 90) == vertical }
+      .filter { _.pointsVertically == vertical }
       .flatMap { _.toListCorner }
       .map { _.copy(isConcave = false) }
   }
@@ -145,12 +143,12 @@ object OrthogonalPolygonPartitioner {
     val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
 
     val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
-      { lines.filter(_.angle.abs != 90) ::: extractChordCorners(chords, true) }
+      { lines.filterNot(_.pointsVertically) ::: extractChordCorners(chords, true) }
       { false }
 
     val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
       { horizontalLines.flatMap(_.toListCorner) :::
-          lines.filter(_.angle.abs == 90) :::
+          lines.filter(_.pointsVertically) :::
           extractChordCorners(chords, false) }
       { true }
 

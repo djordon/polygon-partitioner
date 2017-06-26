@@ -41,17 +41,15 @@ object OrthogonalPolygonChordReducer {
     val opened: TreeMap[Double, Corner] = container.openedCorners ++
       actions
         .getOrElse("toOpen", Nil)
-        .map(cn => (cn.y, cn))
+        .collect { case cn: Corner => (cn.y, cn) }
         .toMap
-        .asInstanceOf[Map[Double, Corner]]
 
     val closed: TreeMap[Double, Corner] = opened --
       actions.getOrElse("toClose", Nil).map(_.y)
 
     val intersections: Map[Chord, Set[Corner]] = actions
       .getOrElse("toIntersect", Nil)
-      .asInstanceOf[List[Chord]]
-      .map(intersecting(opened))
+      .collect { case ch: Chord => intersecting(opened)(ch) }
       .toMap
 
     ChordContainer(closed, intersections ++ container.intersections)
@@ -59,7 +57,7 @@ object OrthogonalPolygonChordReducer {
 
   def computeIntersections(chords: List[Chord]): List[(Chord, Chord)] = {
     val horizontalChords: List[CornerGeometry] = chords.flatMap { ch =>
-      if (ch.angle.abs == 90) List(ch) else ch.toListCorner
+      if (ch.pointsVertically) List(ch) else ch.toListCorner
     }
 
     val lineContainer: ChordContainer = horizontalChords
@@ -70,7 +68,7 @@ object OrthogonalPolygonChordReducer {
       .foldLeft(ChordContainer())(lineSweeper)
 
     val chordMap: Map[Corner, Chord] = chords
-      .filter(_.angle.abs != 90)
+      .filterNot(_.pointsVertically)
       .map(ch => (ch.left, ch))
       .toMap
 
