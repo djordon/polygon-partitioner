@@ -11,14 +11,14 @@ class GeometriesSpec extends WordSpec with Matchers with PolygonFixtures {
     val p1 = Point(Math.random(), Math.random())
     val p2 = Point(Math.random(), Math.random())
 
-    CornerLine(p1, p2, Random.nextInt.abs % 360)
+    CornerLine(p1, p2, Random.nextInt)
   }
 
   def createChord: Chord = {
     val p1 = Point(Math.random(), Math.random())
     val p2 = Point(Math.random(), Math.random())
 
-    Chord(Corner(p1, true, Random.nextInt.abs % 4), Corner(p2, true, Random.nextInt.abs % 4))
+    Chord(Corner(p1, Math.random > 0.5, Random.nextInt), Corner(p2, Math.random > 0.5, Random.nextInt))
   }
 
   "Corner" should {
