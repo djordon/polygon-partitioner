@@ -73,13 +73,13 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     }
 
     "partition" should {
+      import OrthogonalPolygonPartitioner.partition
       "extract non-degenerate rectangles from an orthogonal polygon" in {
         val poly1: Polygon = fixtures("approximatedPolygon")
           .norm()
           .asInstanceOf[Polygon]
 
-        val recs1: List[Rectangle] = OrthogonalPolygonPartitioner
-          .partition(poly1)
+        val recs1: List[Rectangle] = partition(poly1)
 
         def isRectangle(rec: Rectangle): Boolean = {
           (rec.upperLeft.x != rec.lowerRight.x) &&
@@ -89,7 +89,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         recs1.map(isRectangle).reduce(_ && _) should be (true)
 
         val poly2: Polygon = OrthogonalPolygonBuilder.cover(generatePolygon())
-        val recs2: List[Rectangle] = OrthogonalPolygonPartitioner.partition(poly2)
+        val recs2: List[Rectangle] = partition(poly2)
 
         recs2.map(isRectangle).reduce(_ && _) should be (true)
       }
@@ -98,13 +98,11 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
 
         val rectangles: List[List[Polygon]] = polygons
-          .map { OrthogonalPolygonPartitioner.partition }
-          .map { _.map(rec => rec.toPolygon) }
+          .map { partition(_).map(rec => rec.toPolygon) }
 
         val reconstructedPolygons: List[Polygon] = rectangles
           .map { geos => CascadedPolygonUnion.union(geos.asJavaCollection) }
-          .map { _.asInstanceOf[Polygon] }
-          .map { PolygonApproximator.removeAxisAlignedColinearity }
+          .collect { case p: Polygon => PolygonApproximator.removeAxisAlignedColinearity(p) }
 
         for (polygonPairs <- reconstructedPolygons zip polygons.map(normalizePolygon))
           polygonPairs._1 shouldEqual polygonPairs._2
@@ -149,8 +147,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         }
 
         val partitions: List[List[Polygon]] = fixtures.values
-          .map(OrthogonalPolygonPartitioner.partition)
-          .map(_.map(r => r.toPolygon))
+          .map(partition(_).map(r => r.toPolygon))
           .toList
 
         val overlaps: List[Boolean] = partitions
@@ -173,11 +170,12 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
         val corners: List[Corner] = CornerExtractor
           .extractCorners(fixtures("approximatedPolygon")).head
 
-        val startsVertically: Boolean = corners.head.angle.abs != 90
+        val startsVertically: Boolean = !corners.head.pointsVertically
         val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
 
         val vEdges: Set[CornerLine] = extendCorners(vc)(extendVertically = false)
-          .map(_.asInstanceOf[CornerLine]).toSet
+          .collect { case cl: CornerLine => cl }
+          .toSet
 
         val expectedEdges: Set[CornerLine] = Set(
           CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
@@ -296,9 +294,9 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
         }
 
         val intersects: List[Boolean] = chords.map { case (ch1, ch2) =>
-          ch1.angle.abs match {
-            case 90 => chordsIntersect(ch1, ch2)
-            case _ => chordsIntersect(ch2, ch1)
+          ch1.pointsVertically match {
+            case true => chordsIntersect(ch1, ch2)
+            case false => chordsIntersect(ch2, ch1)
           }
         }
 

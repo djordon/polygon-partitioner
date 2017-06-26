@@ -23,7 +23,7 @@ trait PolygonFixtures {
     randomGeometryFactory
       .getGeometry
       .convexHull
-      .norm()
+      .norm
       .asInstanceOf[Polygon]
   }
 
