@@ -44,6 +44,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
   implicit val doubleEq = TolerantNumerics.tolerantDoubleEquality(epsilon)
 
   "PolygonApproximator" can {
+    import GeometryUtils.normalizePolygon
 
     "removeAxisAlignedColinearity" should {
       "remove redundent points that lie on axis aligned lines" in {
@@ -62,6 +63,29 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
         simplified shouldEqual fixtures("lessRedundentPointPolygon")
         nothingHappened shouldEqual fixtures("preDensifiedPolygon")
+      }
+    }
+    "densify" should {
+      "Do nothing when the tolerance is positive infinity or zero" in {
+        for (pg <- fixtures.values) {
+          val newPolygon1 = PolygonApproximator.densify(pg, Double.PositiveInfinity)
+          newPolygon1 shouldEqual normalizePolygon(pg)
+
+          val newPolygon2 = PolygonApproximator.densify(pg, 0.0)
+          newPolygon2 shouldEqual normalizePolygon(pg)
+        }
+      }
+    }
+
+    "simplify" should {
+      "Do nothing when the tolerance is positive infinity or less than zero" in {
+        for (pg <- fixtures.values) {
+          val newPolygon1 = PolygonApproximator.simplify(pg, Double.PositiveInfinity)
+          newPolygon1 shouldEqual normalizePolygon(pg)
+
+          val newPolygon2 = PolygonApproximator.simplify(pg, -1)
+          newPolygon2 shouldEqual normalizePolygon(pg)
+        }
       }
     }
   }
