@@ -4,6 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
 
 import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
+import com.vividsolutions.jts.geom.util.AffineTransformation
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
@@ -12,6 +13,8 @@ import scala.io.Source
 
 
 trait PolygonFixtures {
+  import GeometryUtils.normalizePolygon
+
   val wktReader = new WKTReader()
 
   val geometryFactory = new GeometryFactory()
@@ -34,10 +37,27 @@ trait PolygonFixtures {
     .toMap
     .mapValues(wktReader.read(_).asInstanceOf[Polygon])
 
-  val orthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("rectilinear")
-  val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("non-rectilinear")
-  val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
+  def rotatePolygons(polygonMap: Map[String, Polygon]): Map[String, Polygon] = {
+    val matrices = Map(
+      "" -> Array(1.0, 0.0, 0.0, 0.0, 1.0, 0.0),
+      "-rotated-90" -> Array(0, -1.0, 0.0, 1.0, 0, 0.0),
+      "-rotated-180" -> Array(-1.0, 0, 0.0, 0, -1.0, 0.0),
+      "-rotated-270" -> Array(0, 1.0, 0.0, -1.0, 0, 0.0)
+    )
+    for {
+      (filename, polygon) <- polygonMap
+      (angle, matrix)  <- matrices
+      af = new AffineTransformation(matrix)
+    } yield (s"$filename$angle", normalizePolygon(af.transform(polygon).asInstanceOf[Polygon]))
+  }
+
+  lazy val orthogonalPolygonFixtures: Map[String, Polygon] =
+    rotatePolygons(loadDirectory("rectilinear"))
+
+  lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("non-rectilinear")
+  lazy val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }
+
 
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
   val epsilon: Double = 1.1102230246251568E-16
