@@ -110,7 +110,7 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
     }
 
     "adjustCornerGeometries" should {
-      "make sure that adjusted CornerLines are not longer than the original" in {
+      "make sure that adjusted CornerLines are not longer than the original -- horizontal" in {
         for (pg <- orthogonalPolygonFixtures.values) {
           val polygon: Polygon = normalizePolygon(pg)
           val corners: List[List[Corner]] = extractCorners(polygon)
@@ -139,11 +139,44 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
             }
           }
 
+          Set(Set(), Set(true)) should contain(isShorter.toSet)
+        }
+      }
+
+      "make sure that adjusted CornerLines are not longer than the original -- vertical" in {
+        for (pg <- orthogonalPolygonFixtures.values) {
+          val polygon: Polygon = normalizePolygon(pg)
+          val corners: List[List[Corner]] = extractCorners(polygon)
+
+          val (chords, lines): (List[Chord], List[CornerLine]) = {
+            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+          }
+
+          val verticalLines: List[CornerLine] = lines.filter(_.pointsVertically)
+          val horizontalChordCorners: List[Corner] = {
+            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = false)
+          }
+
+          val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
+            verticalLines ::: horizontalChordCorners
+          }(vertical = true)
+
+          val matchedLines = adjustedCornerLines
+            .sorted(CornerOrderingX)
+            .zip(verticalLines.sorted(CornerOrderingX))
+
+          val isShorter = matchedLines.map { case (a, b) =>
+            a.angle match {
+              case 90 => a.dest.y <= b.dest.y
+              case -90 => a.dest.y >= b.dest.y
+            }
+          }
+
           Set(Set(), Set(true)) should contain (isShorter.toSet)
         }
       }
 
-      "have output CornerLines with the same source points as the input" in {
+      "have output CornerLines with the same source points as the input -- horizontal" in {
         for (pg <- orthogonalPolygonFixtures.values) {
           val polygon: Polygon = normalizePolygon(pg)
           val corners: List[List[Corner]] = extractCorners(polygon)
@@ -164,6 +197,33 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
           val sourcesMatch = adjustedCornerLines
             .sorted(CornerOrderingY)
             .zip(horizontalLines.sorted(CornerOrderingY))
+            .map { case (a, b) => a.source == b.source }
+
+          Set(Set(), Set(true)) should contain (sourcesMatch.toSet)
+        }
+      }
+
+      "have output CornerLines with the same source points as the input -- vertical" in {
+        for (pg <- orthogonalPolygonFixtures.values) {
+          val polygon: Polygon = normalizePolygon(pg)
+          val corners: List[List[Corner]] = extractCorners(polygon)
+
+          val (chords, lines): (List[Chord], List[CornerLine]) = {
+            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+          }
+
+          val verticalLines: List[CornerLine] = lines.filter(_.pointsVertically)
+          val horizontalChordCorners: List[Corner] = {
+            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = false)
+          }
+
+          val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
+            verticalLines ::: horizontalChordCorners
+          }(vertical = true)
+
+          val sourcesMatch = adjustedCornerLines
+            .sorted(CornerOrderingX)
+            .zip(verticalLines.sorted(CornerOrderingX))
             .map { case (a, b) => a.source == b.source }
 
           Set(Set(), Set(true)) should contain (sourcesMatch.toSet)
