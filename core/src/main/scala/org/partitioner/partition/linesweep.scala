@@ -43,17 +43,22 @@ trait RectilinearLineSweeping {
     LineContainer(closed, adjusted ::: lines.cornerLines)
   }
 
-  def adjustCornerGeometries(corners: List[CornerGeometry])(
-    implicit vertical: Boolean): List[CornerLine] = {
+  def createLineSweepGroups(corners: List[CornerGeometry])(
+    implicit vertical: Boolean): List[List[CornerGeometry]] = {
 
-    val lineContainer: LineContainer = corners
+    corners
       .groupBy(_.z(!vertical))
       .toList
       .sortBy(_._1)
       .map(_._2)
-      .foldLeft(LineContainer())(lineSweeper)
+    }
 
-    lineContainer.cornerLines
+  def adjustCornerGeometries(corners: List[CornerGeometry])(
+    implicit vertical: Boolean): List[CornerLine] = {
+
+    createLineSweepGroups(corners)
+      .foldLeft(LineContainer())(lineSweeper)
+      .cornerLines
   }
 }
 
@@ -106,12 +111,18 @@ object CornerLineAdjuster extends RectilinearLineSweeping {
   def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
     implicit vertical: Boolean): Map[String, List[Corner]] = {
 
-    val destinationCorners: List[Corner] = corners
-      .collect { case cn: CornerLine => cn.toListCorner.last }
-
     val toOpenClose: Map[String, List[Corner]] = corners
       .collect { case cn: Corner => cn }
       .groupBy { cn => if (opened.contains(cn.z)) "toClose" else "toOpen" }
+
+    val toOpenPoints: Set[Point] = toOpenClose
+      .getOrElse("toOpen", Nil)
+      .map(_.point)
+      .toSet
+
+    val destinationCorners: List[Corner] = corners
+      .collect { case cn: CornerLine => cn.toListCorner.last }
+      .filterNot { cn => toOpenPoints.contains(cn.point) }
 
     val toOpen: List[Corner] = destinationCorners ::: toOpenClose
       .getOrElse("toOpen", Nil)
