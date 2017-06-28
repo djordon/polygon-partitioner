@@ -95,17 +95,16 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "create rectangles that union to the original polygon" in {
-        val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
+        for ((name, polygon) <- orthogonalPolygonFixtures) {
+          val rectangles: List[Polygon] = partition(polygon).map(_.toPolygon)
 
-        val rectangles: List[List[Polygon]] = polygons
-          .map { partition(_).map(rec => rec.toPolygon) }
+          val reconstructedPolygon: Polygon = List(CascadedPolygonUnion
+            .union(rectangles.asJavaCollection))
+            .collect { case p: Polygon => PolygonApproximator.removeAxisAlignedColinearity(p) }
+            .head
 
-        val reconstructedPolygons: List[Polygon] = rectangles
-          .map { geos => CascadedPolygonUnion.union(geos.asJavaCollection) }
-          .collect { case p: Polygon => PolygonApproximator.removeAxisAlignedColinearity(p) }
-
-        for (polygonPairs <- reconstructedPolygons zip polygons.map(normalizePolygon))
-          polygonPairs._1 shouldEqual polygonPairs._2
+          reconstructedPolygon shouldEqual normalizePolygon(polygon)
+        }
       }
 
       "handle polygons with chords" in {
@@ -146,16 +145,13 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
           } yield polys(i).overlaps(polys(j))
         }
 
-        val partitions: List[List[Polygon]] = fixtures.values
-          .map(partition(_).map(r => r.toPolygon))
-          .toList
+        for ((name, polygon) <- orthogonalPolygonFixtures) {
+          val partitions: List[Polygon] = partition(polygon).map(_.toPolygon)
+          val overlaps: Seq[Boolean] = testOverlap(partitions)
 
-        val overlaps: List[Boolean] = partitions
-          .map(testOverlap)
-          .filter(_.length > 0)
-          .map(se => se.reduce(_ || _))
-
-        overlaps.reduce(_ || _) should be (false)
+          if (overlaps.length > 0)
+            overlaps.reduce(_ || _) should be(false)
+        }
       }
     }
   }
