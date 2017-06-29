@@ -3,7 +3,6 @@ package org.partitioner
 import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
-import org.partitioner.GeometryUtils.normalizePolygon
 import org.partitioner.partition._
 
 import scala.collection.JavaConverters._
@@ -157,52 +156,6 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
   }
 }
 
-class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
-  import OrthogonalPolygonCornerExtender.extendCorners
-
-  "OrthogonalPolygonCornerExtender" can {
-    "extendCorners" should {
-      "extend the corners until they hit the boundary" in {
-        val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures("approximatedPolygon")).head
-
-        val startsVertically: Boolean = !corners.head.pointsVertically
-        val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
-
-        val vEdges: Set[CornerLine] = extendCorners(vc)(extendVertically = false)
-          .collect { case cl: CornerLine => cl }
-          .toSet
-
-        val expectedEdges: Set[CornerLine] = Set(
-          CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
-          CornerLine(Point(0.5, 1.75), Point(1.0, 1.75), 0)
-        )
-        vEdges shouldEqual expectedEdges
-      }
-
-      "create duplicate chords when the corners point in the same direction" in {
-        for (polygonName <- List("complexPolygon0", "chordedPolygon1")) {
-          val polygon: Polygon = normalizePolygon(orthogonalPolygonFixtures(polygonName))
-          val corners: List[List[Corner]] = CornerExtractor.extractCorners(polygon)
-
-          val extended = extendCorners(corners.flatMap(_.tail))(true)
-              .collect { case ch: Chord => ch }
-
-          val sameChords: Set[Chord] = extended
-            .map(_.swap)
-            .toSet
-            .intersect(extended.toSet)
-
-          sameChords should not be empty
-
-          sameChords.map { ch =>
-            ch.source.angle == ch.dest.oppositeAngle
-          } should be (Set(true))
-        }
-      }
-    }
-  }
-}
 
 class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
   import GeometryUtils.{IterablePolygon, normalizePolygon}
