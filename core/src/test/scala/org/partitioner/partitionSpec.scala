@@ -9,13 +9,11 @@ import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
 
 
-class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
-  import GeometryUtils.{IterablePolygon, normalizePolygon}
-
+object RectangleUnion {
   def rectangles2Polygon(recs: List[Rectangle]): Polygon = {
     val envelopes: List[Geometry] = recs.map { r =>
       List(new Coordinate(r.upperLeft.x, r.upperLeft.y),
-           new Coordinate(r.lowerRight.x, r.lowerRight.y))
+        new Coordinate(r.lowerRight.x, r.lowerRight.y))
     }
       .map(OrthogonalPolygonBuilder.coverCoordinates(_))
 
@@ -25,6 +23,12 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
     PolygonApproximator.removeAxisAlignedColinearity(union)
   }
+}
+
+
+class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
+  import GeometryUtils.{IterablePolygon, normalizePolygon}
+  import RectangleUnion.rectangles2Polygon
 
   "OrthogonalPolygonPartitioner" can {
     "createChordsCornerLines" should {
@@ -293,6 +297,27 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
           val uniqueChords: List[Chord] = removeDuplicateChords(allChords)
 
           allChords.length should be > uniqueChords.length
+        }
+      }
+    }
+  }
+}
+
+
+class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures {
+  import partition.PolygonPartitioner.partition
+  import RectangleUnion.rectangles2Polygon
+  import GeometryUtils.createPolygon
+
+  "PolygonPartitioner" can {
+    "partition" should {
+      "Create a rectangles that union to a polygon that cover the original" in {
+        for (pg <- fixtures.values) {
+          val pgWithoutHoles = createPolygon(pg.getExteriorRing.getCoordinates)
+          val rectangles: List[Rectangle] = partition(pgWithoutHoles)
+          val polygon: Polygon = rectangles2Polygon(rectangles)
+
+          polygon.contains(pgWithoutHoles) should be(true)
         }
       }
     }
