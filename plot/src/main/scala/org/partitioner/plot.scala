@@ -41,7 +41,7 @@ trait PlotDefaults {
   )
 
   def defaultRectangleColor(rec: Rectangle): Color = {
-    Color.RGBA(0, 15, (Math.random() * 200).toInt + 55, 0.7)
+    Color.RGB(0, 15, (Math.random() * 200).toInt + 55)
   }
 }
 
@@ -113,7 +113,8 @@ object PolygonPlotter extends PlotDefaults {
 
   def polygonPlotter(
       polygon: Polygon,
-      marker: Marker = boundaryMarker): List[Scatter] = {
+      marker: Marker = boundaryMarker,
+      fill: Option[Fill] = None): List[Scatter] = {
 
     val interior: List[List[Point]] = polygon.getHolesCoordinates.map(_.map(Point.apply))
     val exterior: List[Point] = polygon.toList.map(Point.apply)
@@ -121,7 +122,8 @@ object PolygonPlotter extends PlotDefaults {
     val partialScatter = pointScatter(
       _: List[Point],
       marker,
-      mode = Some(ScatterMode(ScatterMode.Markers, ScatterMode.Lines))
+      mode = Some(ScatterMode(ScatterMode.Markers, ScatterMode.Lines)),
+      fill = fill
     )
 
     (exterior :: interior).map(partialScatter)
@@ -138,7 +140,13 @@ object PolygonPlotter extends PlotDefaults {
       polygonMarker: Marker = boundaryMarker,
       interiorMarker: Marker = interiorLineMarker): File = {
 
+    val blackMarker: Marker = Marker(
+      color = Color.RGB(0, 0, 0),
+      line = Line(color = Color.RGB(0, 0, 0), width = 0.0)
+    )
+
     val scatters: List[Scatter] = {
+      polygons.flatMap(polygonPlotter(_: Polygon, blackMarker, Some(Fill.ToNextY))) ++
       rectangles.flatMap(rectanglePlotter(_: Rectangle, rectangleColor)) ++
       innerLines.flatMap(cornerLinePlotter(_: CornerLine, interiorMarker)) ++
       polygons.flatMap(polygonPlotter(_: Polygon, polygonMarker))
