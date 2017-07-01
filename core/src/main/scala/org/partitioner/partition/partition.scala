@@ -161,7 +161,7 @@ object OrthogonalPolygonPartitioner {
     case InsertionPoint(i) => i
   }
 
-  private def extractRectangles(cornersPoints: List[CornerGeometry]): List[Rectangle] = {
+  def extractRectangles(cornersPoints: List[CornerGeometry]): List[Rectangle] = {
     val (upperLeft, lowerLeft, lowerRight) = extractRectangleEndpoints(cornersPoints) match {
         case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
     }
@@ -179,4 +179,25 @@ object OrthogonalPolygonPartitioner {
     .andThen(extractCorners _)
     .andThen(makeRectangleCorners _)
     .andThen(extractRectangles _)
+}
+
+
+object PolygonPartitioner {
+  import CornerExtractor.extractCorners
+  import OrthogonalPolygonPartitioner.{extractRectangles, makeRectangleCorners}
+  import OrthogonalPolygonBuilder.approximate
+
+  def partition(
+      polygon: Polygon,
+      simplifyTolerance: Double = 0,
+      densifyTolerance: Double = Double.PositiveInfinity,
+      size: Int = 3,
+      step: Int = 1): List[Rectangle] = {
+
+    (extractCorners _)
+      .andThen(makeRectangleCorners _)
+      .andThen(extractRectangles _)(
+        approximate(polygon, simplifyTolerance, densifyTolerance, size, step)
+      )
+  }
 }
