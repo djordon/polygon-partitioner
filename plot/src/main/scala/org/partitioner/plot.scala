@@ -39,6 +39,10 @@ trait PlotDefaults {
     color = interiorMarkerColor,
     line = interiorLine
   )
+
+  def defaultRectangleColor(rec: Rectangle): Color = {
+    Color.RGBA(0, 15, (Math.random() * 200).toInt + 55, 0.7)
+  }
 }
 
 
@@ -90,14 +94,12 @@ object PolygonPlotter extends PlotDefaults {
 
   def rectanglePlotter(
       rectangle: Rectangle,
-      shadeColor: Option[Color] = None): List[Scatter] = {
+      rectangleColor: Rectangle => Color = defaultRectangleColor _): List[Scatter] = {
 
     val top: List[Point] = List(rectangle.upperLeft, rectangle.upperRight)
     val bot: List[Point] = List(rectangle.lowerLeft, rectangle.lowerRight)
 
-    val color: Color = shadeColor getOrElse {
-      Color.RGBA(0, 15, (Math.random() * 200).toInt + 55, 0.7)
-    }
+    val color: Color = rectangleColor(rectangle)
     val marker: Marker = Marker(
       color = color,
       line = Line(color = color, width = 1.0)
@@ -132,7 +134,7 @@ object PolygonPlotter extends PlotDefaults {
       title: String = "",
       fileName: String = "quick.html",
       layout: Layout = defaultLayout,
-      rectangleColor: Option[Color] = None,
+      rectangleColor: Rectangle => Color = defaultRectangleColor _,
       polygonMarker: Marker = boundaryMarker,
       interiorMarker: Marker = interiorLineMarker): File = {
 
