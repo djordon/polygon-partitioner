@@ -47,11 +47,13 @@ case class Rectangle(upperLeft: Point, lowerRight: Point) {
 
 
 trait CornerGeometry {
+  val pointsVertically: Boolean = angle.abs == 90
   def angle: Int
   def isConcave: Boolean
+  def oppositeAngle: Int = ((angle + 270) % 360) - 90
   def point: Point
   def toListCorner: List[CornerGeometry]
-  def w: Double = if (angle.abs == 90) y else x
+  def w: Double = if (pointsVertically) y else x
   def x: Double = point.x
   def y: Double = point.y
   def z(implicit vertical: Boolean): Double = if (vertical) y else x
@@ -79,11 +81,8 @@ object Corner {
 
 
 case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeometry {
-  lazy val oppositeAngle = ((angle + 270) % 360) - 90
-
   def isConcave: Boolean = true
   def point: Point = source
-  def swap: CornerLine = CornerLine(dest, source, oppositeAngle)
   def toListCorner: List[Corner] = {
     List(Corner(source, true, angle), Corner(dest, false, oppositeAngle))
   }
@@ -96,6 +95,7 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def angle: Int = source.angle
   def isConcave: Boolean = true
   def point: Point = source.point
+  def swap: Chord = Chord(dest, source)
   def toCornerLine: CornerLine = CornerLine(source.point, dest.point, source.angle)
   def toListCorner: List[Corner] = List(source, dest)
   def xMax: Double = if (source.x > dest.x) source.x else dest.x

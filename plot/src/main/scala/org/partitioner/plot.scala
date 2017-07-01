@@ -6,91 +6,144 @@ import com.vividsolutions.jts.geom.Polygon
 
 import org.partitioner._
 
-import plotly.element.{Color, Line, Marker, ScatterMode, Fill}
-import plotly.layout.{Axis, Layout}
+import plotly.element._
+import plotly.layout.{Axis, Layout, HoverMode, Margin}
 import plotly.{Plotly, Scatter}
 
 
-object PolygonPlotter {
-  import GeometryUtils.IterablePolygon
+trait PlotDefaults {
+  lazy val boundaryLine = Line(color = boundaryMarkerColor, width = 1.0)
+  lazy val boundaryMarkerColor = Color.RGBA(194, 33, 10, 0.9)
+  lazy val boundaryMarker = Marker(color = boundaryMarkerColor, line = boundaryLine)
 
-  def scatterLines(points: List[Point], markerColor: Color, markerLine: Line):
-      Scatter = {
+  val defaultLayout = Layout(
+    title = "",
+    xaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
+    yaxis = Axis(showgrid = true, showticklabels = false, zeroline = false),
+    width = 550,
+    height = 550,
+    showlegend = false,
+    plot_bgcolor = Color.RGBA(0, 0, 0, 0),
+    paper_bgcolor = Color.RGBA(0, 0, 0, 0),
+    hovermode = HoverMode.Closest,
+    margin = Margin(l = 15, r = 15, t = 15, b = 15)
+  )
+
+  lazy val interiorLine = Line(
+    color = interiorMarkerColor,
+    width = 1.0,
+    dash = Dash.Dot
+  )
+  lazy val interiorMarkerColor = Color.RGBA(175, 175, 175, 0.85)
+  lazy val interiorLineMarker = Marker(
+    color = interiorMarkerColor,
+    line = interiorLine
+  )
+
+  def defaultRectangleColor(rec: Rectangle): Color = {
+    Color.RGBA(0, 15, (Math.random() * 200).toInt + 55, 0.7)
+  }
+}
+
+
+object PolygonPlotter extends PlotDefaults {
+  import GeometryUtils.IterablePolygon
+  import plotly.Sequence.Doubles
+
+  def pointScatter(
+      points: List[Point],
+      marker: Marker,
+      text: Option[Seq[String]] = None,
+      mode: Option[ScatterMode] = Some(ScatterMode(ScatterMode.Lines)),
+      line: Option[Line] = None,
+      textPosition: Option[TextPosition] = None,
+      textFont: Option[TextFont] = None,
+      name: Option[String] = None,
+      connectGaps: Option[Boolean] = None,
+      xAxis: Option[AxisReference] = None,
+      yAxis: Option[AxisReference] = None,
+      fill: Option[Fill]= None): Scatter = {
+
     Scatter(
-      values = points.map(_.x),
-      secondValues = points.map(_.y),
-      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
-      marker = Marker(color = markerColor, line = markerLine)
+      x = Some(Doubles(points.map(_.x))),
+      y = Some(Doubles(points.map(_.y))),
+      mode = mode,
+      marker = Some(marker),
+      text = text,
+      line = line,
+      textposition = textPosition,
+      textfont = textFont,
+      name = name,
+      connectgaps = connectGaps,
+      xaxis = xAxis,
+      yaxis = yAxis,
+      fill = fill,
+      error_x = Option(null),
+      error_y = Option(null)
     )
   }
 
-  def extendedCornerPlotter(line: CornerLine): List[Scatter] = {
+  def cornerLinePlotter(
+      line: CornerLine,
+      marker: Marker = interiorLineMarker): List[Scatter] = {
+
     val points: List[Point] = List(line.source, line.dest)
 
-    List(scatterLines(
-      points = points,
-      markerColor = Color.RGBA(152, 0, 0, 0.8),
-      markerLine = Line(color = Color.RGBA(30, 0, 0, 1.0), width = 1.0)
-    ))
+    List(pointScatter(points, marker = marker))
   }
 
-  def rectanglePlotter(rectangle: Rectangle): List[Scatter] = {
+  def rectanglePlotter(
+      rectangle: Rectangle,
+      rectangleColor: Rectangle => Color = defaultRectangleColor _): List[Scatter] = {
 
     val top: List[Point] = List(rectangle.upperLeft, rectangle.upperRight)
     val bot: List[Point] = List(rectangle.lowerLeft, rectangle.lowerRight)
 
-    val blueShade: Int = (Math.random() * 200).toInt + 55
-    val blue: Color = Color.RGBA(0, 15, blueShade, 0.7)
-    val marker: Marker = Marker(color = blue, line = Line(color = blue, width = 1.0))
-
-    Scatter(
-      values = bot.map(_.x),
-      secondValues = bot.map(_.y),
-      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
-      marker = marker
-    ) ::
-    Scatter(
-      values = top.map(_.x),
-      secondValues = top.map(_.y),
-      mode = ScatterMode(ScatterMode.Markers, ScatterMode.Lines),
-      marker = marker,
-      fill = Fill.ToNextY
-    ) :: Nil
-  }
-
-  def polygonPlotter(polygon: Polygon): List[Scatter] = {
-    val interior: List[List[Point]] = polygon.getHoles.map(_.toList.map(Point.apply))
-    val exterior: List[Point] = polygon.toList.map(Point.apply)
-
-    val scatterPartial = scatterLines(
-      _: List[Point],
-      markerColor = Color.RGBA(255, 153, 51, 0.8),
-      markerLine = Line(color = Color.RGBA(255, 153, 51, 0.8), width = 1.0)
+    val color: Color = rectangleColor(rectangle)
+    val marker: Marker = Marker(
+      color = color,
+      line = Line(color = color, width = 1.0)
     )
 
-    (exterior :: interior).map(scatterPartial)
+    List(
+      pointScatter(bot, marker),
+      pointScatter(top, marker, fill = Some(Fill.ToNextY))
+    )
+  }
+
+  def polygonPlotter(
+      polygon: Polygon,
+      marker: Marker = boundaryMarker): List[Scatter] = {
+
+    val interior: List[List[Point]] = polygon.getHolesCoordinates.map(_.map(Point.apply))
+    val exterior: List[Point] = polygon.toList.map(Point.apply)
+
+    val partialScatter = pointScatter(
+      _: List[Point],
+      marker,
+      mode = Some(ScatterMode(ScatterMode.Markers, ScatterMode.Lines))
+    )
+
+    (exterior :: interior).map(partialScatter)
   }
 
   def quickPlot(
       polygons: List[Polygon],
       innerLines: List[CornerLine] = Nil,
       rectangles: List[Rectangle] = Nil,
-      plotName: String = "quick",
-      fileName: String = "quick.html"): File = {
+      title: String = "",
+      fileName: String = "quick.html",
+      layout: Layout = defaultLayout,
+      rectangleColor: Rectangle => Color = defaultRectangleColor _,
+      polygonMarker: Marker = boundaryMarker,
+      interiorMarker: Marker = interiorLineMarker): File = {
 
     val scatters: List[Scatter] = {
-        polygons.flatMap(polygonPlotter) ++
-        innerLines.flatMap(extendedCornerPlotter) ++
-        rectangles.flatMap(rectanglePlotter)
+      rectangles.flatMap(rectanglePlotter(_: Rectangle, rectangleColor)) ++
+      innerLines.flatMap(cornerLinePlotter(_: CornerLine, interiorMarker)) ++
+      polygons.flatMap(polygonPlotter(_: Polygon, polygonMarker))
     }
 
-    val layout = Layout(
-      title = plotName,
-      xaxis = Axis(showgrid=true),
-      yaxis = Axis(showgrid=true),
-      width = 600,
-      height = 600
-    )
-    Plotly.plot(fileName, scatters, layout)
+    Plotly.plot(fileName, scatters, layout.copy(title = Some(title)))
   }
 }

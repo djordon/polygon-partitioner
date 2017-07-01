@@ -10,12 +10,24 @@ object GeometryUtils {
     override def iterator: Iterator[Coordinate] = pg.getExteriorRing.getCoordinates.toIterator
 
     def getHoles: List[Polygon] = {
-      val holes: IndexedSeq[LinearRing] = for {i <- 0 until pg.getNumInteriorRing }
-        yield pg.getInteriorRingN(i).asInstanceOf[LinearRing]
+      val holes: IndexedSeq[LineString] = for {i <- 0 until pg.getNumInteriorRing }
+        yield pg.getInteriorRingN(i)
 
-      holes.map(geometryFactory.createPolygon).map(normalizePolygon).toList
+      holes.map(ls => createPolygon(ls.getCoordinates)).toList
+    }
+
+    def getHolesCoordinates: List[List[Coordinate]] = {
+      val holes: IndexedSeq[LineString] = for {i <- 0 until pg.getNumInteriorRing }
+        yield pg.getInteriorRingN(i)
+
+      holes.map(_.getCoordinates.toList).toList
     }
   }
 
   def normalizePolygon(pg: Polygon): Polygon = pg.norm.asInstanceOf[Polygon]
+  def createPolygon(coordinates: Array[Coordinate]): Polygon = {
+    val polygon = geometryFactory.createPolygon(coordinates)
+    polygon.normalize()
+    polygon
+  }
 }

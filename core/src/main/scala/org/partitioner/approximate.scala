@@ -64,15 +64,22 @@ object PolygonApproximator {
     polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _
   }
 
-  def simplify(polygon: Polygon, tolerance: Double): Polygon = DouglasPeuckerSimplifier
-    .simplify(polygon, tolerance)
-    .norm
-    .asInstanceOf[Polygon]
+  def simplify(polygon: Polygon, tolerance: Double): Polygon = {
+    if (0 <= tolerance && tolerance < Double.PositiveInfinity)
+      DouglasPeuckerSimplifier
+        .simplify(polygon, tolerance)
+        .norm
+        .asInstanceOf[Polygon]
+    else
+      polygon.norm.asInstanceOf[Polygon]
+  }
 
-  def densify(polygon: Polygon, tolerance: Double): Polygon = Densifier
-    .densify(polygon, tolerance)
-    .norm
-    .asInstanceOf[Polygon]
+  def densify(polygon: Polygon, tolerance: Double): Polygon = {
+    if (0 < tolerance && tolerance < Double.PositiveInfinity)
+      Densifier.densify(polygon, tolerance).norm.asInstanceOf[Polygon]
+    else
+      polygon.norm.asInstanceOf[Polygon]
+  }
 }
 
 
@@ -110,7 +117,7 @@ object OrthogonalPolygonBuilder {
   def approximate(
       polygon: Polygon,
       simplifyTolerance: Double = tol,
-      densifyTolerance: Double = 10.0,
+      densifyTolerance: Double = Double.PositiveInfinity,
       size: Int = 3,
       step: Int = 1): Polygon = {
 

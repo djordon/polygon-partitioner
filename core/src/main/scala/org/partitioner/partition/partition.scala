@@ -34,7 +34,7 @@ object CornerExtractor {
 
   def extractCorners(polygon: Polygon): List[List[Corner]] = {
     val boundary: List[Coordinate] = polygon.toList.tail
-    val holes: List[List[Coordinate]] = polygon.getHoles.map(_.toList.tail.reverse)
+    val holes: List[List[Coordinate]] = polygon.getHolesCoordinates.map(_.tail)
 
     (boundary :: holes).map(makeCorners)
   }
@@ -97,36 +97,27 @@ object OrthogonalPolygonPartitioner {
   import CornerExtractor.extractCorners
   import GeometryUtils.normalizePolygon
   import RectangleEndpointExtractor.extractRectangleEndpoints
+  import OrthogonalPolygonCornerExtender.extendCorners
   import scala.language.implicitConversions
 
-  def orderCorners(corners: List[Corner], vertically: Boolean): List[Corner] = {
-    val startsVertically: Boolean = corners.head.angle.abs != 90
-    if (startsVertically == vertically) corners.init else corners.tail
-  }
+  def createInteriorLines(corners: List[List[Corner]]): List[CornerGeometry] = {
+    val co: List[Corner] = corners.flatMap(_.tail)
 
-  def extractInternalEdges(corners: List[List[Corner]], verticals: Boolean)
-      : List[CornerGeometry] = {
-
-    val co: List[Corner] = corners.flatMap(orderCorners(_, vertically = verticals))
-
-    OrthogonalPolygonCornerExtender
-      .extendCorners(co)(extendVertically = !verticals)
+    extendCorners(co)(true) ::: extendCorners(co)(false)
   }
 
   def extractChordCorners(chords: List[Chord], vertical: Boolean): List[Corner] = {
     chords
-      .filter { ch => (ch.angle.abs == 90) == vertical }
+      .filter { _.pointsVertically == vertical }
       .flatMap { _.toListCorner }
       .map { _.copy(isConcave = false) }
   }
 
-  def makeRectangleCorners(corners: List[List[Corner]]): List[CornerGeometry] = {
-
-    val vEdges: List[CornerGeometry] = extractInternalEdges(corners, true)
-    val hEdges: List[CornerGeometry] = extractInternalEdges(corners, false)
+  def separateChordsCornerLines(interiorLines: List[CornerGeometry])
+      : (List[Chord], List[CornerLine]) = {
 
     val chords: List[Chord] = OrthogonalPolygonChordReducer.reduceChords {
-      (vEdges ::: hEdges) collect { case c: Chord => c }
+      interiorLines collect { case c: Chord => c }
     }
 
     val chordPoints: Set[Point] = chords
@@ -134,21 +125,33 @@ object OrthogonalPolygonPartitioner {
       .map(_.point)
       .toSet
 
-    val lines: List[CornerLine] = (vEdges ::: hEdges) collect {
+    val lines: List[CornerLine] = interiorLines collect {
       case ec: CornerLine if !chordPoints.contains(ec.source) => ec
       case ch: Chord if !(chordPoints contains ch.point) => ch.toCornerLine
     }
 
-    val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
-    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
-      { lines.filter(_.angle.abs != 90) ::: extractChordCorners(chords, true) }
+    (chords, lines)
+  }
+
+  def createChordsCornerLines: List[List[Corner]] => (List[Chord], List[CornerLine]) = {
+    (createInteriorLines _) andThen (separateChordsCornerLines _)
+  }
+
+  def makeRectangleCorners(corners: List[List[Corner]]): List[CornerGeometry] = {
+
+    val (chords, lines) = createChordsCornerLines(corners)
+
+    val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
+      { lines.filterNot(_.pointsVertically) ::: extractChordCorners(chords, true) }
       { false }
 
-    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornersGeometries
+    val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries
       { horizontalLines.flatMap(_.toListCorner) :::
-          lines.filter(_.angle.abs == 90) :::
+          lines.filter(_.pointsVertically) :::
           extractChordCorners(chords, false) }
       { true }
+
+    val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
 
     chords ::: verticalLines ::: horizontalLines ::: convexCorners
   }
@@ -158,7 +161,7 @@ object OrthogonalPolygonPartitioner {
     case InsertionPoint(i) => i
   }
 
-  private def extractRectangles(cornersPoints: List[CornerGeometry]): List[Rectangle] = {
+  def extractRectangles(cornersPoints: List[CornerGeometry]): List[Rectangle] = {
     val (upperLeft, lowerLeft, lowerRight) = extractRectangleEndpoints(cornersPoints) match {
         case EndpointStacks(ul, ll, lr) => (ul, ll, lr)
     }
@@ -176,4 +179,25 @@ object OrthogonalPolygonPartitioner {
     .andThen(extractCorners _)
     .andThen(makeRectangleCorners _)
     .andThen(extractRectangles _)
+}
+
+
+object PolygonPartitioner {
+  import CornerExtractor.extractCorners
+  import OrthogonalPolygonPartitioner.{extractRectangles, makeRectangleCorners}
+  import OrthogonalPolygonBuilder.approximate
+
+  def partition(
+      polygon: Polygon,
+      simplifyTolerance: Double = 0,
+      densifyTolerance: Double = Double.PositiveInfinity,
+      size: Int = 3,
+      step: Int = 1): List[Rectangle] = {
+
+    (extractCorners _)
+      .andThen(makeRectangleCorners _)
+      .andThen(extractRectangles _)(
+        approximate(polygon, simplifyTolerance, densifyTolerance, size, step)
+      )
+  }
 }
