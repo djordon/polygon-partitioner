@@ -3,11 +3,9 @@ package org.partitioner.plot
 import java.io.File
 
 import com.vividsolutions.jts.geom.Polygon
-
 import org.partitioner._
-
 import plotly.element._
-import plotly.layout.{Axis, Layout, HoverMode, Margin}
+import plotly.layout.{Axis, HoverMode, Layout, Margin}
 import plotly.{Plotly, Scatter}
 
 
@@ -15,6 +13,11 @@ trait PlotDefaults {
   lazy val boundaryLine = Line(color = boundaryMarkerColor, width = 1.0)
   lazy val boundaryMarkerColor = Color.RGBA(194, 33, 10, 0.9)
   lazy val boundaryMarker = Marker(color = boundaryMarkerColor, line = boundaryLine)
+
+  lazy val backgroundMarker: Marker = Marker(
+    color = Color.RGB(0, 0, 0),
+    line = Line(color = Color.RGB(0, 0, 0), width = 0.0)
+  )
 
   val defaultLayout = Layout(
     title = "",
@@ -138,15 +141,12 @@ object PolygonPlotter extends PlotDefaults {
       layout: Layout = defaultLayout,
       rectangleColor: Rectangle => Color = defaultRectangleColor _,
       polygonMarker: Marker = boundaryMarker,
-      interiorMarker: Marker = interiorLineMarker): File = {
+      interiorMarker: Marker = interiorLineMarker,
+      backgroundMarker: Marker = backgroundMarker): File = {
 
-    val blackMarker: Marker = Marker(
-      color = Color.RGB(0, 0, 0),
-      line = Line(color = Color.RGB(0, 0, 0), width = 0.0)
-    )
-
+    val fill: Option[Fill] = Some(Fill.ToNextY)
     val scatters: List[Scatter] = {
-      polygons.flatMap(polygonPlotter(_: Polygon, blackMarker, Some(Fill.ToNextY))) ++
+      polygons.flatMap(polygonPlotter(_: Polygon, backgroundMarker, fill)) ++
       rectangles.flatMap(rectanglePlotter(_: Rectangle, rectangleColor)) ++
       innerLines.flatMap(cornerLinePlotter(_: CornerLine, interiorMarker)) ++
       polygons.flatMap(polygonPlotter(_: Polygon, polygonMarker))
