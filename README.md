@@ -1,7 +1,8 @@
 Polygon-partitioner
 ===================
 
-|Build Status| |Coverage Status| |license|
+[![Build Status][]][] [![Coverage Status][]][] [![MIT License]]
+[![Build Status](https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master)](https://travis-ci.org/djordon/polygon-partitioner) [![Coverage Status](https://coveralls.io/repos/github/djordon/polygon-partitioner/badge.svg?branch=master)](https://coveralls.io/repos/github/djordon/polygon-partitioner/badge.svg?branch=master)[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://opensource.org/licenses/MIT)
 
 For partitioning polygons into disjoint rectangles. Because you never know when you need to partition some polygons.
 
@@ -61,35 +62,28 @@ For partitioning polygons into disjoint rectangles. Because you never know when 
 </script>
 </body>
 
+
 Documentation
 -------------
-
 
 Features
 --------
 
-
 Installation
 ------------
-
 
 Bugs and issues
 ---------------
 
-
 Copyright and license
 ---------------------
 
-Code and documentation Copyright 2017 Daniel Jordon. Code released
-under the `MIT
-license <https://github.com/djordon/polygon-partitioner/blob/master/LICENSE.txt>`__.
+Code and documentation Copyright 2017 Daniel Jordon. Code released under the [MIT license].
 
-.. |Build Status| image:: https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master
-   :target: https://travis-ci.org/djordon/polygon-partitioner
-
-.. |Coverage Status| image:: https://coveralls.io/repos/github/djordon/polygon-partitioner/badge.svg?branch=master
-   :target: https://coveralls.io/github/djordon/polygon-partitioner?branch=master
-
-.. |license| image:: https://img.shields.io/github/license/mashape/apistatus.svg
-    :alt: MIT License
-    :target: https://opensource.org/licenses/MIT
+  [Build Status]: https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master
+  [![Build Status]]: https://travis-ci.org/djordon/polygon-partitioner
+  [Coverage Status]: https://coveralls.io/repos/github/djordon/polygon-partitioner/badge.svg?branch=master
+  [![Coverage Status]]: https://coveralls.io/github/djordon/polygon-partitioner?branch=master
+  [MIT License]: https://img.shields.io/github/license/mashape/apistatus.svg
+  [![MIT License]]: https://opensource.org/licenses/MIT
+  [MIT license]: https://github.com/djordon/polygon-partitioner/blob/master/LICENSE.txt
