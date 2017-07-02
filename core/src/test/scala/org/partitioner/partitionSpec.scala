@@ -91,7 +91,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
         recs1.map(isRectangle).reduce(_ && _) should be (true)
 
-        val poly2: Polygon = OrthogonalPolygonBuilder.cover(generatePolygon())
+        val poly2: Polygon = OrthogonalPolygonBuilder.createExteriorCover(generatePolygon())
         val recs2: List[Rectangle] = partition(poly2)
 
         recs2.map(isRectangle).reduce(_ && _) should be (true)
@@ -112,9 +112,9 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
       "handle polygons with chords" in {
         val polygons: List[Polygon] = List(
-          "chordedPolygon1",
-          "chordedPolygon2",
-          "chordedPolygon3"
+          "withChordsPolygon1",
+          "withChordsPolygon2",
+          "withChordsPolygon3"
         ).map(fixtures(_))
 
         val partitions = polygons
@@ -127,9 +127,9 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
       "handle have very few partitions" in {
         val polygons: List[Polygon] = List(
-          "chordedPolygon1",
-          "chordedPolygon2",
-          "chordedPolygon3"
+          "withChordsPolygon1",
+          "withChordsPolygon2",
+          "withChordsPolygon3"
         ).map(fixtures(_))
 
         val partitions: List[List[Rectangle]] = polygons
@@ -141,11 +141,11 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "create rectangles that do not overlap with one another" in {
-        def testOverlap(polys: List[Polygon]): Seq[Boolean] = {
+        def testOverlap(polygons: List[Polygon]): Seq[Boolean] = {
           for {
-            i <- 0 until polys.length - 1
-            j <- i + 1 until polys.length
-          } yield polys(i).overlaps(polys(j))
+            i <- 0 until polygons.length - 1
+            j <- i + 1 until polygons.length
+          } yield polygons(i).overlaps(polygons(j))
         }
 
         for ((name, polygon) <- orthogonalPolygonFixtures) {
@@ -223,7 +223,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
   "OrthogonalPolygonChordReducer" can {
     "computeIntersections" should {
       "find all intersection between horizontal and vertical chords" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
+        val corners: List[List[Corner]] = extractCorners(fixtures("withChordsPolygon1"))
         val interiorLines: List[CornerGeometry] = createInteriorLines(corners)
 
         val allChords: List[Chord] = interiorLines collect { case c: Chord => c }
@@ -235,7 +235,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "find chords that intersect" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
+        val corners: List[List[Corner]] = extractCorners(fixtures("withChordsPolygon1"))
         val interiorLines: List[CornerGeometry] = createInteriorLines(corners)
 
         val allChords: List[Chord] = interiorLines collect { case c: Chord => c }
@@ -259,7 +259,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "reduceChords" should {
       "return a subset of non-intersecting chords" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
+        val corners: List[List[Corner]] = extractCorners(fixtures("withChordsPolygon1"))
         val interiorLines: List[CornerGeometry] = createInteriorLines(corners)
 
         val allChords: List[Chord] = interiorLines collect { case c: Chord => c }
@@ -278,7 +278,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
     "removeDuplicateChords" should {
       "remove chords that have the same endpoints, but in reverse" in {
-        val corners: List[List[Corner]] = extractCorners(fixtures("chordedPolygon1"))
+        val corners: List[List[Corner]] = extractCorners(fixtures("withChordsPolygon1"))
         val interiorLines: List[CornerGeometry] = createInteriorLines(corners)
 
         val allChords: List[Chord] = interiorLines collect { case c: Chord => c }
@@ -289,7 +289,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "have fewer chords in cases where two concave corners point at each other" in {
-        for (polygonName <- List("chordedPolygon1", "complexPolygon0")) {
+        for (polygonName <- List("withChordsPolygon1", "complexPolygon0")) {
           val corners: List[List[Corner]] = extractCorners(fixtures(polygonName))
           val interiorLines: List[CornerGeometry] = createInteriorLines(corners)
 
