@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LineString, LinearRing}
+import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LinearRing}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
 
@@ -96,7 +96,7 @@ object OrthogonalPolygonBuilder {
       .getEnvelope
   }
 
-  def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+  def coverExteriorBoundary(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val simpler: Polygon = removeAxisAlignedColinearity(polygon)
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)
@@ -106,12 +106,40 @@ object OrthogonalPolygonBuilder {
       .map(coverCoordinates)
       .toList
 
-    val newBoundary: LineString = CascadedPolygonUnion
-      .union(coveringRectangles.asJavaCollection)
-      .asInstanceOf[Polygon]
+    removeAxisAlignedColinearity {
+      CascadedPolygonUnion
+        .union(coveringRectangles.asJavaCollection)
+        .asInstanceOf[Polygon]
+    }
+  }
+
+  def createExteriorCover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+    val boundaryCover: Polygon = coverExteriorBoundary(polygon, size, step)
+    geometryFactory.createPolygon(boundaryCover.getExteriorRing.getCoordinates)
+  }
+
+  def createInteriorCover(polygon: Polygon, size: Int = 3, step: Int = 1): List[Polygon] = {
+    coverExteriorBoundary(polygon, size, step).getHoles
+  }
+
+  def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+    val boundaryCover: Polygon = coverExteriorBoundary(polygon, size, step)
+
+    val exterior: LinearRing = boundaryCover
       .getExteriorRing
-    
-    removeAxisAlignedColinearity(geometryFactory.createPolygon(newBoundary.getCoordinates))
+      .asInstanceOf[LinearRing]
+
+    val holes: Array[LinearRing] = polygon
+      .getHoles
+      .map(coverExteriorBoundary(_: Polygon, size, step))
+      .flatMap(_.getHoles)
+      .map(_.getExteriorRing.asInstanceOf[LinearRing])
+      .toArray
+
+    geometryFactory
+      .createPolygon(exterior, holes)
+      .norm
+      .asInstanceOf[Polygon]
   }
 
   def approximate(
@@ -124,7 +152,7 @@ object OrthogonalPolygonBuilder {
     val approximator: Polygon => Polygon = Function.chain(Seq(
       simplify(_: Polygon, simplifyTolerance),
       densify(_: Polygon, densifyTolerance),
-      cover(_: Polygon, size, step)
+      createExteriorCover(_: Polygon, size, step)
     ))
 
     val exterior: Polygon = geometryFactory.createPolygon(polygon.toArray)
