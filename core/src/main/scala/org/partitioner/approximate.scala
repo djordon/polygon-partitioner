@@ -96,7 +96,11 @@ object OrthogonalPolygonBuilder {
       .getEnvelope
   }
 
-  def coverExteriorBoundary(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+  def createExteriorRingCover(
+      polygon: Polygon,
+      size: Int = 3,
+      step: Int = 1): Polygon = {
+
     val simpler: Polygon = removeAxisAlignedColinearity(polygon)
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)
@@ -113,17 +117,25 @@ object OrthogonalPolygonBuilder {
     }
   }
 
-  def createExteriorCover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
-    val boundaryCover: Polygon = coverExteriorBoundary(polygon, size, step)
+  def createExteriorCover(
+      polygon: Polygon,
+      size: Int = 3,
+      step: Int = 1): Polygon = {
+
+    val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
     geometryFactory.createPolygon(boundaryCover.getExteriorRing.getCoordinates)
   }
 
-  def createInteriorCover(polygon: Polygon, size: Int = 3, step: Int = 1): List[Polygon] = {
-    coverExteriorBoundary(polygon, size, step).getHoles
+  def createInteriorCover(
+      polygon: Polygon,
+      size: Int = 3,
+      step: Int = 1): List[Polygon] = {
+
+    createExteriorRingCover(polygon, size, step).getHoles.filter(polygon.covers)
   }
 
   def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
-    val boundaryCover: Polygon = coverExteriorBoundary(polygon, size, step)
+    val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
 
     val exterior: LinearRing = boundaryCover
       .getExteriorRing
@@ -131,8 +143,8 @@ object OrthogonalPolygonBuilder {
 
     val holes: Array[LinearRing] = polygon
       .getHoles
-      .map(coverExteriorBoundary(_: Polygon, size, step))
-      .flatMap(_.getHoles)
+      .map(createExteriorRingCover(_: Polygon, size, step))
+      .flatMap(_.getHoles.filter(polygon.covers))
       .map(_.getExteriorRing.asInstanceOf[LinearRing])
       .toArray
 
@@ -149,7 +161,7 @@ object OrthogonalPolygonBuilder {
       size: Int = 3,
       step: Int = 1): Polygon = {
 
-    val approximator: Polygon => Polygon = Function.chain(Seq(
+    val transformer: Polygon => Polygon = Function.chain(Seq(
       simplify(_: Polygon, simplifyTolerance),
       densify(_: Polygon, densifyTolerance),
       createExteriorCover(_: Polygon, size, step)
@@ -157,7 +169,7 @@ object OrthogonalPolygonBuilder {
 
     val exterior: Polygon = geometryFactory.createPolygon(polygon.toArray)
     val approximated: List[LinearRing] = (exterior :: polygon.getHoles)
-      .map { approximator(_).getExteriorRing.asInstanceOf[LinearRing] }
+      .map { transformer(_).getExteriorRing.asInstanceOf[LinearRing] }
 
     geometryFactory
       .createPolygon(approximated.head, approximated.tail.toArray)

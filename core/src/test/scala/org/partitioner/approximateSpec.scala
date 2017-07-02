@@ -64,7 +64,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
   implicit val doubleEq = TolerantNumerics.tolerantDoubleEquality(epsilon)
 
   "OrthogonalPolygonBuilder" can {
-     import GeometryUtils.IterablePolygon
+     import GeometryUtils.{IterablePolygon, createPolygon}
 
     "createExteriorCover" should {
       "create the expected polygon" in {
@@ -75,20 +75,22 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
       }
 
       "create an orthogonal polygon" in {
-        val randomPolygon: Polygon = generatePolygon()
-        val randomCover: Polygon = OrthogonalPolygonBuilder.createExteriorCover(randomPolygon)
-        val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
+        for (i <- 0 until 10) {
+          val randomPolygon: Polygon = generatePolygon()
+          val randomCover: Polygon = OrthogonalPolygonBuilder.createExteriorCover(randomPolygon)
+          val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
-        val vecs: List[Vec] = randomCover
-          .toList
-          .sliding(2, 1)
-          .map(Vec.apply)
-          .toList
+          val vecs: List[Vec] = randomCover
+            .toList
+            .sliding(2, 1)
+            .map(Vec.apply)
+            .toList
 
-        val isAxisAligned: List[Boolean] = vecs
-          .map(v => axisAlignedAngles.contains(v.angle))
-  
-        isAxisAligned.reduce(_ && _) should be (true)
+          val isAxisAligned: List[Boolean] = vecs
+            .map(v => axisAlignedAngles.contains(v.angle))
+
+          isAxisAligned.reduce(_ && _) should be(true)
+        }
       }
 
       "cover the polygon" in {
@@ -100,6 +102,60 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
 
         covered covers fixtures("preDensifiedPolygon") should be (true)
         randomCover covers randomPolygon should be (true)
+      }
+    }
+
+    "cover" should {
+      "create the expected polygon" in {
+        val covered: Polygon = OrthogonalPolygonBuilder
+          .cover(fixtures("preDensifiedPolygon"))
+
+        covered shouldEqual (fixtures("approximatedPolygon"))
+      }
+
+      "create an orthogonal polygon" in {
+        for (i <- 0 until 10) {
+          val randomPolygon: Polygon = generatePolygon()
+          val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+          val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
+
+          val vecs: List[Vec] = randomCover
+            .toList
+            .sliding(2, 1)
+            .map(Vec.apply)
+            .toList
+
+          val isAxisAligned: List[Boolean] = vecs
+            .map(v => axisAlignedAngles.contains(v.angle))
+
+          isAxisAligned.reduce(_ && _) should be(true)
+        }
+      }
+
+      "cover the polygon" in {
+        for (pg <- fixtures.values) {
+          val covered: Polygon = OrthogonalPolygonBuilder.cover(pg)
+
+          val randomPolygon: Polygon = generatePolygon()
+          val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+
+          covered covers pg should be(true)
+          randomCover covers randomPolygon should be(true)
+        }
+      }
+    }
+
+    "createInteriorCover" should {
+      "return polygons that lay within the original polygon" in {
+        for ((name, polygon) <- fixtures) {
+          val interior: List[Polygon] = OrthogonalPolygonBuilder
+            .createInteriorCover(polygon)
+
+          val exterior: Polygon = createPolygon(polygon.getExteriorRing.getCoordinates)
+
+          for (pg <- interior)
+            exterior contains pg should be (true)
+        }
       }
     }
 
