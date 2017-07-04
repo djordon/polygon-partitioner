@@ -287,14 +287,14 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
 
 
   def createLineString(cn: CornerLine): LineString = {
-    GeometryUtils.geometryFactory.createLineString(
+    geometryFactory.createLineString(
       Array(new Coordinate(cn.source.x, cn.source.y),
         new Coordinate(cn.dest.x, cn.dest.y))
     )
   }
 
   def createLineString(cn: Chord): LineString = {
-    GeometryUtils.geometryFactory.createLineString(
+    geometryFactory.createLineString(
       Array(new Coordinate(cn.source.x, cn.source.y),
             new Coordinate(cn.dest.x, cn.dest.y))
     )
@@ -345,7 +345,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "create duplicate chords when the corners point in the same direction" in {
-        for (polygonName <- List("complexPolygon0", "chordedPolygon1")) {
+        for (polygonName <- List("complexPolygon0", "withChordsPolygon1")) {
           val polygon: Polygon = normalizePolygon(orthogonalPolygonFixtures(polygonName))
           val corners: List[List[Corner]] = CornerExtractor.extractCorners(polygon)
 
