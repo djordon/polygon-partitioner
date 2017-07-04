@@ -188,3 +188,4 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
     }
   }
 }
+

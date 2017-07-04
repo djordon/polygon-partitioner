@@ -1,16 +1,14 @@
 package org.partitioner
 
 import scala.collection.JavaConverters._
-
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{GeometryFactory, Geometry, Polygon, Coordinate, LinearRing}
+import com.vividsolutions.jts.geom.{Polygon, Coordinate, LinearRing, Geometry}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 
 
 object PolygonApproximator {
-  import GeometryUtils.IterablePolygon
-  val geometryFactory = new GeometryFactory()
+  import GeometryUtils.{IterablePolygon, geometryFactory}
 
   private def polygon2vecs(pg: Polygon): List[Vec] = {
     val boundary: List[Coordinate] = pg.toList
@@ -84,11 +82,10 @@ object PolygonApproximator {
 
 
 object OrthogonalPolygonBuilder {
-  import GeometryUtils.IterablePolygon
+  import GeometryUtils.{IterablePolygon, geometryFactory}
   import PolygonApproximator.{densify, removeAxisAlignedColinearity, simplify}
 
   val tol: Double = scala.math.pow(2, -12)
-  val geometryFactory = new GeometryFactory()
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
     geometryFactory
@@ -131,7 +128,8 @@ object OrthogonalPolygonBuilder {
       size: Int = 3,
       step: Int = 1): List[Polygon] = {
 
-    createExteriorRingCover(polygon, size, step).getHoles.filter(polygon.covers)
+    val ext = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
+    createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
   }
 
   def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
