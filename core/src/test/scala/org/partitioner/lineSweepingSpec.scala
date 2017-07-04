@@ -287,14 +287,14 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
 
 
   def createLineString(cn: CornerLine): LineString = {
-    GeometryUtils.geometryFactory.createLineString(
+    geometryFactory.createLineString(
       Array(new Coordinate(cn.source.x, cn.source.y),
         new Coordinate(cn.dest.x, cn.dest.y))
     )
   }
 
   def createLineString(cn: Chord): LineString = {
-    GeometryUtils.geometryFactory.createLineString(
+    geometryFactory.createLineString(
       Array(new Coordinate(cn.source.x, cn.source.y),
             new Coordinate(cn.dest.x, cn.dest.y))
     )

@@ -2,8 +2,7 @@ package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
-
-import com.vividsolutions.jts.geom.Polygon
+import com.vividsolutions.jts.geom.{Polygon, MultiPoint}
 
 
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
@@ -13,20 +12,20 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
   "PolygonApproximator" can {
     import GeometryUtils.normalizePolygon
 
-    "removeAxisAlignedColinearity" should {
-      "remove redundent points that lie on axis aligned lines" in {
+    "removeAxisAlignedCollinearity" should {
+      "remove redundant points that lie on axis aligned lines" in {
         val simplified: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(fixtures("redundantBasisPointPolygon"))
+          .removeAxisAlignedCollinearity(fixtures("redundantBasisPointPolygon"))
 
         simplified shouldEqual fixtures("simplePolygon")
       }
 
       "keep redundant points that lie on non-axis aligned lines" in {
         val simplified: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(fixtures("redundantPointPolygon"))
+          .removeAxisAlignedCollinearity(fixtures("redundantPointPolygon"))
 
         val nothingHappened: Polygon = PolygonApproximator
-          .removeAxisAlignedColinearity(fixtures("preDensifiedPolygon"))
+          .removeAxisAlignedCollinearity(fixtures("preDensifiedPolygon"))
 
         simplified shouldEqual fixtures("lessRedundantPointPolygon")
         nothingHappened shouldEqual fixtures("preDensifiedPolygon")
@@ -60,11 +59,27 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 }
 
 class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFixtures {
-  val epsilon: Double = 1.1102230246251568E-16
-  implicit val doubleEq = TolerantNumerics.tolerantDoubleEquality(epsilon)
 
   "OrthogonalPolygonBuilder" can {
      import GeometryUtils.{IterablePolygon, createPolygon}
+
+    "coverCoordinates" should {
+      "create a geometry that covers the input coordinates" in {
+        for (i <- 0 until 10) {
+          randomGeometryFactory.setNumPoints(20)
+
+          val points = randomGeometryFactory
+            .getGeometry
+            .asInstanceOf[MultiPoint]
+            .getCoordinates
+            .filter(p => Math.random() > 0.5)
+
+          val cover = OrthogonalPolygonBuilder.coverCoordinates(points)
+
+          cover.contains(geometryFactory.createLineString(points)) should be(true)
+        }
+      }
+    }
 
     "createExteriorCover" should {
       "create the expected polygon" in {
@@ -80,10 +95,10 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
           val randomCover: Polygon = OrthogonalPolygonBuilder.createExteriorCover(randomPolygon)
           val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
-          val vecs: List[Vec] = randomCover
+          val vecs: List[Vertex] = randomCover
             .toList
             .sliding(2, 1)
-            .map(Vec.apply)
+            .map(Vertex.apply)
             .toList
 
           val isAxisAligned: List[Boolean] = vecs
@@ -119,10 +134,10 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
           val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
           val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
-          val vecs: List[Vec] = randomCover
+          val vecs: List[Vertex] = randomCover
             .toList
             .sliding(2, 1)
-            .map(Vec.apply)
+            .map(Vertex.apply)
             .toList
 
           val isAxisAligned: List[Boolean] = vecs

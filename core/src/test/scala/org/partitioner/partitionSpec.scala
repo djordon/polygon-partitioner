@@ -21,7 +21,7 @@ object RectangleUnion {
       .union(envelopes.asJavaCollection)
       .asInstanceOf[Polygon]
 
-    PolygonApproximator.removeAxisAlignedColinearity(union)
+    PolygonApproximator.removeAxisAlignedCollinearity(union)
   }
 }
 
@@ -103,7 +103,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
           val reconstructedPolygon: Polygon = List(CascadedPolygonUnion
             .union(rectangles.asJavaCollection))
-            .collect { case p: Polygon => PolygonApproximator.removeAxisAlignedColinearity(p) }
+            .collect { case p: Polygon => PolygonApproximator.removeAxisAlignedCollinearity(p) }
             .head
 
           reconstructedPolygon shouldEqual normalizePolygon(polygon)
