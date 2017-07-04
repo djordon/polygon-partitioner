@@ -104,10 +104,10 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def yMin: Double = if (source.y < dest.y) source.y else dest.y
 }
 
-case class Vec(coord: Coordinate, angle: Double)
+case class Vertex(coord: Coordinate, angle: Double)
 
 
-object Vec {
+object Vertex {
   def apply(a: List[Coordinate]) = 
-    new Vec(a(1), AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
+    new Vertex(a(1), AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
 }
