@@ -10,7 +10,7 @@ import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 object PolygonApproximator {
   import GeometryUtils.{IterablePolygon, geometryFactory}
 
-  private def polygon2vecs(pg: Polygon): List[Vec] = {
+  private def polygon2Vertices(pg: Polygon): List[Vertex] = {
     val boundary: List[Coordinate] = pg.toList
     Stream
       .continually(boundary)
@@ -18,39 +18,39 @@ object PolygonApproximator {
       .take(boundary.length * 2)
       .toList
       .sliding(2, 1)
-      .map(Vec.apply)
+      .map(Vertex.apply)
       .toList
   }
 
-  private def filterVecs(vecs: List[Vec]): List[Vec] = {
-    val reduced: List[Vec] = vecs
+  private def filterVertices(vertices: List[Vertex]): List[Vertex] = {
+    val reduced: List[Vertex] = vertices
       .drop(2)
-      .foldLeft(vecs.take(2))(rectilinearFolder)
+      .foldLeft(vertices.take(2))(rectilinearFolder)
 
-    val boundary: List[Vec] = reduced.take(reduced.length / 2 + 1).tail
-    val last: Vec = boundary.last
+    val boundary: List[Vertex] = reduced.take(reduced.length / 2 + 1).tail
+    val last: Vertex = boundary.last
 
     if (last == boundary.head) boundary else last :: boundary
   }
 
-  private def isAxisAligned(a: List[Vec]): Boolean = {
+  private def isAxisAligned(a: List[Vertex]): Boolean = {
     (a(0).coord.x == a(2).coord.x && a(1).coord.x == a(2).coord.x) ||
     (a(0).coord.y == a(2).coord.y && a(1).coord.y == a(2).coord.y)
   }
 
-  private def rectilinearFolder(a: List[Vec], b: Vec): List[Vec] = {
+  private def rectilinearFolder(a: List[Vertex], b: Vertex): List[Vertex] = {
     if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
-  private def vecs2polygon(vecs: List[Vec]): Polygon = {
-    geometryFactory.createPolygon(vecs.map(_.coord).toArray)
+  private def vertices2polygon(vertices: List[Vertex]): Polygon = {
+    geometryFactory.createPolygon(vertices.map(_.coord).toArray)
   }
 
-  def removeAxisAlignedColinearity(pg: Polygon): Polygon = {
-    val shell: Polygon = removeAxisAlignedColinearitySimple(pg)
+  def removeAxisAlignedCollinearity(pg: Polygon): Polygon = {
+    val shell: Polygon = removeAxisAlignedCollinearitySimple(pg)
     val holes: List[Polygon] = pg
       .getHoles
-      .map(removeAxisAlignedColinearitySimple)
+      .map(removeAxisAlignedCollinearitySimple)
 
     geometryFactory.createPolygon(
       shell.getExteriorRing.asInstanceOf[LinearRing],
@@ -58,8 +58,8 @@ object PolygonApproximator {
     ).norm.asInstanceOf[Polygon]
   }
 
-  private def removeAxisAlignedColinearitySimple: Polygon => Polygon = {
-    polygon2vecs _ andThen filterVecs _ andThen vecs2polygon _
+  private def removeAxisAlignedCollinearitySimple: Polygon => Polygon = {
+    polygon2Vertices _ andThen filterVertices _ andThen vertices2polygon _
   }
 
   def simplify(polygon: Polygon, tolerance: Double): Polygon = {
@@ -83,14 +83,10 @@ object PolygonApproximator {
 
 object OrthogonalPolygonBuilder {
   import GeometryUtils.{IterablePolygon, geometryFactory}
-  import PolygonApproximator.{densify, removeAxisAlignedColinearity, simplify}
-
-  val tol: Double = scala.math.pow(2, -12)
+  import PolygonApproximator.{densify, removeAxisAlignedCollinearity, simplify}
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
-    geometryFactory
-      .createLineString(points.toArray)
-      .getEnvelope
+    geometryFactory.createLineString(points.toArray).getEnvelope
   }
 
   def createExteriorRingCover(
@@ -98,7 +94,7 @@ object OrthogonalPolygonBuilder {
       size: Int = 3,
       step: Int = 1): Polygon = {
 
-    val simpler: Polygon = removeAxisAlignedColinearity(polygon)
+    val simpler: Polygon = removeAxisAlignedCollinearity(polygon)
     val length: Int = size.max(3)
     val window: Int = step.min(length - 2).max(1)
 
@@ -107,7 +103,7 @@ object OrthogonalPolygonBuilder {
       .map(coverCoordinates)
       .toList
 
-    removeAxisAlignedColinearity {
+    removeAxisAlignedCollinearity {
       CascadedPolygonUnion
         .union(coveringRectangles.asJavaCollection)
         .asInstanceOf[Polygon]
@@ -123,7 +119,7 @@ object OrthogonalPolygonBuilder {
     geometryFactory.createPolygon(boundaryCover.getExteriorRing.getCoordinates)
   }
 
-  def createInteriorCover(
+  private[partitioner] def createInteriorCover(
       polygon: Polygon,
       size: Int = 3,
       step: Int = 1): List[Polygon] = {
@@ -154,7 +150,7 @@ object OrthogonalPolygonBuilder {
 
   def approximate(
       polygon: Polygon,
-      simplifyTolerance: Double = tol,
+      simplifyTolerance: Double = 0,
       densifyTolerance: Double = Double.PositiveInfinity,
       size: Int = 3,
       step: Int = 1): Polygon = {
