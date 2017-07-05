@@ -13,7 +13,7 @@ This package implements two main methods:
 
 1. A method that approximates a polygon by a rectilinear polygon.
 
-    This is guaranteed to cover the input with the default settings. You can change the coarseness of the approximation, leading to an output with far fewer points than the input (but without a guarantee of if covering the input).
+   This is guaranteed to cover the input with the default settings. You can change the coarseness of the approximation, leading to an output with far fewer points than the input (but without a guarantee of if covering the input).
  
 2. A method that partitions a rectilinear polygon into non-overlapping rectangles.
 
