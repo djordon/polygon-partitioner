@@ -10,6 +10,7 @@ Features
 --------
 
 This package implements two main methods:
+
 1. A method that approximates a polygon by a rectilinear polygon.
 
     This is guaranteed to cover the input with the default settings. You can change the coarseness of the approximation, leading to an output with far fewer points than the input (but without a guarantee of if covering the input).
@@ -24,12 +25,12 @@ Documentation
 Installation
 ------------
 
-```scala
-lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git"))
+.. code-block:: scala
 
-lazy val root = Project("root", file("."))
-  .dependsOn(partitioner)
-```
+   lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git"))
+
+   lazy val root = Project("root", file("."))
+     .dependsOn(partitioner)
 
 
 Bugs and issues
