@@ -19,7 +19,7 @@ lazy val core = (project in file("core"))
   .settings(
     Seq(
       name := "polygon-partitioner-core",
-      version := "0.1.1-SNAPSHOT",
+      version := "0.1.0-SNAPSHOT",
       coverageEnabled := true
     ),
     libraryDependencies ++= coreDependencies
