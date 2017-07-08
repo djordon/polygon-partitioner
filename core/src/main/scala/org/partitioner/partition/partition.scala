@@ -41,10 +41,10 @@ object CornerExtractor {
 }
 
 
-object RectangleEndpointExtractor {
+trait RectangleEndpointExtractor {
   implicit def pointToListPoint(pt: Point): List[Point] = List(pt)
 
-  private def stackExtendedCorner(ex: CornerLine, stacks: EndpointStacks): EndpointStacks = {
+  private[this] def stackExtendedCorner(ex: CornerLine, stacks: EndpointStacks): EndpointStacks = {
     ex match {
       case CornerLine(s, d, 0) => stacks.prepend(ll=s, lr=d)
       case CornerLine(s, d, 90) => stacks.prepend(ul=d, lr=s)
@@ -54,7 +54,7 @@ object RectangleEndpointExtractor {
     }
   }
 
-  private def stackCorner(cn: Corner, stacks: EndpointStacks): EndpointStacks = {
+  private[this] def stackCorner(cn: Corner, stacks: EndpointStacks): EndpointStacks = {
     cn match {
       case Corner(s, false, 90) => stacks.prepend(ul=s)
       case Corner(s, false, 180) => stacks.prepend(ll=s)
@@ -63,7 +63,7 @@ object RectangleEndpointExtractor {
     }
   }
 
-  private def stackChord(ch: Chord, stacks: EndpointStacks): EndpointStacks = {
+  private[this] def stackChord(ch: Chord, stacks: EndpointStacks): EndpointStacks = {
     ch match {
       case Chord(Corner(s, _, 90), Corner(d, _, 0)) => stacks.prepend(lr=s)
       case Chord(Corner(s, _, 90), Corner(d, _, -90)) => stacks.prepend(lr=s, ul=d)
@@ -77,7 +77,7 @@ object RectangleEndpointExtractor {
     }
   }
 
-  private def cornerFolder(
+  private[this] def cornerFolder(
       stacks: EndpointStacks,
       corner: CornerGeometry): EndpointStacks = {
 
@@ -93,10 +93,9 @@ object RectangleEndpointExtractor {
   }
 }
 
-object OrthogonalPolygonPartitioner {
+object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
   import CornerExtractor.extractCorners
   import PolygonApproximator.removeAxisAlignedCollinearity
-  import RectangleEndpointExtractor.extractRectangleEndpoints
   import OrthogonalPolygonCornerExtender.extendCorners
   import scala.language.implicitConversions
 
@@ -175,10 +174,19 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  def partition: Polygon => List[Rectangle] = (removeAxisAlignedCollinearity _)
-    .andThen(extractCorners _)
-    .andThen(makeRectangleCorners _)
-    .andThen(extractRectangles _)
+  private[this] def partitionLiteral: Polygon => List[Rectangle] =
+    (removeAxisAlignedCollinearity _)
+      .andThen(extractCorners _)
+      .andThen(makeRectangleCorners _)
+      .andThen(extractRectangles _)
+
+  /**
+   * Partitions an orthogonal polygon into a list of non-overlapping rectangles.
+   *
+   * @param polygon the orthogonal polygon to partition
+   * @return Returns a list of non-overlapping rectangles
+   */
+  def partition(polygon: Polygon): List[Rectangle] = partitionLiteral(polygon)
 }
 
 
@@ -187,6 +195,22 @@ object PolygonPartitioner {
   import OrthogonalPolygonPartitioner.{extractRectangles, makeRectangleCorners}
   import OrthogonalPolygonBuilder.approximate
 
+  /**
+   * Returns a list of non-overlapping rectangles that approximately
+   * cover the input polygon.
+   *
+   * @param polygon The input polygon
+   * @param simplifyTolerance The tolerance to use when simplifying the boundary
+   *                          before covering the input polygon with an orthogonal polygon.
+   *                          Must be non negative. Greater values imply greater
+   *                          simplification. Defaults to 0.
+   * @param densifyTolerance Specifies how many points should be added to the boundary.
+   *                         Larger values imply fewer points added to the boundary
+   *                         before covering the polygon with an orthogonal polygon.
+   * @param size
+   * @param step
+   * @return Returns a list of non-overlapping rectangles
+   */
   def partition(
       polygon: Polygon,
       simplifyTolerance: Double = 0,

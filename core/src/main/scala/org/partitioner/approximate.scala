@@ -3,14 +3,13 @@ package org.partitioner
 import scala.collection.JavaConverters._
 import com.vividsolutions.jts.densify.Densifier
 import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
-import com.vividsolutions.jts.geom.{Polygon, Coordinate, LinearRing, Geometry}
+import com.vividsolutions.jts.geom.{Coordinate, Geometry, LinearRing, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
 object PolygonApproximator {
-  import GeometryUtils.{IterablePolygon, geometryFactory}
-
-  private def polygon2Vertices(pg: Polygon): List[Vertex] = {
+  private[this] def polygon2Vertices(pg: Polygon): List[Vertex] = {
     val boundary: List[Coordinate] = pg.toList
     Stream
       .continually(boundary)
@@ -22,7 +21,7 @@ object PolygonApproximator {
       .toList
   }
 
-  private def filterVertices(vertices: List[Vertex]): List[Vertex] = {
+  private[this] def filterVertices(vertices: List[Vertex]): List[Vertex] = {
     val reduced: List[Vertex] = vertices
       .drop(2)
       .foldLeft(vertices.take(2))(rectilinearFolder)
@@ -33,17 +32,21 @@ object PolygonApproximator {
     if (last == boundary.head) boundary else last :: boundary
   }
 
-  private def isAxisAligned(a: List[Vertex]): Boolean = {
+  private[this] def isAxisAligned(a: List[Vertex]): Boolean = {
     (a(0).coord.x == a(2).coord.x && a(1).coord.x == a(2).coord.x) ||
     (a(0).coord.y == a(2).coord.y && a(1).coord.y == a(2).coord.y)
   }
 
-  private def rectilinearFolder(a: List[Vertex], b: Vertex): List[Vertex] = {
+  private[this] def rectilinearFolder(a: List[Vertex], b: Vertex): List[Vertex] = {
     if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
-  private def vertices2polygon(vertices: List[Vertex]): Polygon = {
+  private[this] def vertices2polygon(vertices: List[Vertex]): Polygon = {
     geometryFactory.createPolygon(vertices.map(_.coord).toArray)
+  }
+
+  private[this] def removeAxisAlignedCollinearitySimple: Polygon => Polygon = {
+    polygon2Vertices _ andThen filterVertices _ andThen vertices2polygon _
   }
 
   def removeAxisAlignedCollinearity(pg: Polygon): Polygon = {
@@ -56,10 +59,6 @@ object PolygonApproximator {
       shell.getExteriorRing.asInstanceOf[LinearRing],
       holes.map(_.getExteriorRing.asInstanceOf[LinearRing]).toArray
     ).norm.asInstanceOf[Polygon]
-  }
-
-  private def removeAxisAlignedCollinearitySimple: Polygon => Polygon = {
-    polygon2Vertices _ andThen filterVertices _ andThen vertices2polygon _
   }
 
   def simplify(polygon: Polygon, tolerance: Double): Polygon = {
@@ -82,7 +81,6 @@ object PolygonApproximator {
 
 
 object OrthogonalPolygonBuilder {
-  import GeometryUtils.{IterablePolygon, geometryFactory}
   import PolygonApproximator.{densify, removeAxisAlignedCollinearity, simplify}
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
@@ -110,6 +108,19 @@ object OrthogonalPolygonBuilder {
     }
   }
 
+  /**
+   * Creates an orthogonal polygon that covers the input polygon
+   *
+   * @param polygon the input polygon
+   * @param size a value that sets how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 2.
+   * @param step a value that helps set how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 0 and less size - 1.
+   *
+   * @return Returns an orthogonal polygon
+   */
   def createExteriorCover(
       polygon: Polygon,
       size: Int = 3,
@@ -128,7 +139,7 @@ object OrthogonalPolygonBuilder {
     createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
   }
 
-  def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+  private[partitioner] def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
 
     val exterior: LinearRing = boundaryCover
