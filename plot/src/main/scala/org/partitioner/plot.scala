@@ -142,7 +142,8 @@ object PolygonPlotter extends PlotDefaults {
       rectangleColor: Rectangle => Color = defaultRectangleColor _,
       polygonMarker: Marker = boundaryMarker,
       interiorMarker: Marker = interiorLineMarker,
-      backgroundMarker: Marker = backgroundMarker): File = {
+      backgroundMarker: Marker = backgroundMarker,
+      openInBrowser: Boolean = true): File = {
 
     val fill: Option[Fill] = Some(Fill.ToNextY)
     val scatters: List[Scatter] = {
@@ -152,6 +153,6 @@ object PolygonPlotter extends PlotDefaults {
       polygons.flatMap(polygonPlotter(_: Polygon, polygonMarker))
     }
 
-    Plotly.plot(fileName, scatters, layout.copy(title = Some(title)))
+    Plotly.plot(fileName, scatters, layout.copy(title = Some(title)), openInBrowser = openInBrowser)
   }
 }
