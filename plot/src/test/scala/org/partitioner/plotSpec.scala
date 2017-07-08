@@ -13,7 +13,7 @@ class PolygonPlotterSpec extends WordSpec with Matchers with PolygonFixtures {
     "polygonPlotter" should {
       "return a Scatter for the exterior and holes of the polygon" in {
         for (pg <- fixtures.values) {
-          val numGeometries: Int = pg.getNumGeometries
+          val numGeometries: Int = 1 + pg.getNumInteriorRing
           val scatters = PolygonPlotter.polygonPlotter(pg)
 
           scatters.length shouldEqual numGeometries
