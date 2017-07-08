@@ -3,11 +3,9 @@ package org.partitioner.plot
 import java.io.File
 
 import com.vividsolutions.jts.geom.Polygon
-
 import org.partitioner._
-
 import plotly.element._
-import plotly.layout.{Axis, Layout, HoverMode, Margin}
+import plotly.layout.{Axis, HoverMode, Layout, Margin}
 import plotly.{Plotly, Scatter}
 
 
@@ -15,6 +13,11 @@ trait PlotDefaults {
   lazy val boundaryLine = Line(color = boundaryMarkerColor, width = 1.0)
   lazy val boundaryMarkerColor = Color.RGBA(194, 33, 10, 0.9)
   lazy val boundaryMarker = Marker(color = boundaryMarkerColor, line = boundaryLine)
+
+  lazy val backgroundMarker: Marker = Marker(
+    color = Color.RGB(0, 0, 0),
+    line = Line(color = Color.RGB(0, 0, 0), width = 0.0)
+  )
 
   val defaultLayout = Layout(
     title = "",
@@ -41,7 +44,7 @@ trait PlotDefaults {
   )
 
   def defaultRectangleColor(rec: Rectangle): Color = {
-    Color.RGBA(0, 15, (Math.random() * 200).toInt + 55, 0.7)
+    Color.RGB(0, 15, (Math.random() * 200).toInt + 55)
   }
 }
 
@@ -113,7 +116,8 @@ object PolygonPlotter extends PlotDefaults {
 
   def polygonPlotter(
       polygon: Polygon,
-      marker: Marker = boundaryMarker): List[Scatter] = {
+      marker: Marker = boundaryMarker,
+      fill: Option[Fill] = None): List[Scatter] = {
 
     val interior: List[List[Point]] = polygon.getHolesCoordinates.map(_.map(Point.apply))
     val exterior: List[Point] = polygon.toList.map(Point.apply)
@@ -121,7 +125,8 @@ object PolygonPlotter extends PlotDefaults {
     val partialScatter = pointScatter(
       _: List[Point],
       marker,
-      mode = Some(ScatterMode(ScatterMode.Markers, ScatterMode.Lines))
+      mode = Some(ScatterMode(ScatterMode.Markers, ScatterMode.Lines)),
+      fill = fill
     )
 
     (exterior :: interior).map(partialScatter)
@@ -136,14 +141,18 @@ object PolygonPlotter extends PlotDefaults {
       layout: Layout = defaultLayout,
       rectangleColor: Rectangle => Color = defaultRectangleColor _,
       polygonMarker: Marker = boundaryMarker,
-      interiorMarker: Marker = interiorLineMarker): File = {
+      interiorMarker: Marker = interiorLineMarker,
+      backgroundMarker: Marker = backgroundMarker,
+      openInBrowser: Boolean = true): File = {
 
+    val fill: Option[Fill] = Some(Fill.ToNextY)
     val scatters: List[Scatter] = {
+      polygons.flatMap(polygonPlotter(_: Polygon, backgroundMarker, fill)) ++
       rectangles.flatMap(rectanglePlotter(_: Rectangle, rectangleColor)) ++
       innerLines.flatMap(cornerLinePlotter(_: CornerLine, interiorMarker)) ++
       polygons.flatMap(polygonPlotter(_: Polygon, polygonMarker))
     }
 
-    Plotly.plot(fileName, scatters, layout.copy(title = Some(title)))
+    Plotly.plot(fileName, scatters, layout.copy(title = Some(title)), openInBrowser = openInBrowser)
   }
 }

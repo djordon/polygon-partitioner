@@ -6,20 +6,37 @@ Polygon-partitioner
 For partitioning polygons into disjoint rectangles. Because you never know when you need to partition some polygons.
 
 
-Documentation
--------------
-
-
 Features
 --------
+
+This package implements two main methods:
+
+1. A method that approximates a polygon by a rectilinear polygon.
+
+   This is guaranteed to cover the input with the default settings. You can change the coarseness of the approximation, leading to an output with far fewer points than the input (but without a guarantee of if covering the input).
+ 
+2. A method that partitions a rectilinear polygon into non-overlapping rectangles.
+
+
+Documentation
+-------------
 
 
 Installation
 ------------
 
+.. code-block:: scala
+
+   lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git"))
+
+   lazy val root = Project("root", file("."))
+     .dependsOn(partitioner)
+
 
 Bugs and issues
 ---------------
+
+File bugs/issues/requests at https://github.com/djordon/polygon-partitioner/issues.
 
 
 Copyright and license

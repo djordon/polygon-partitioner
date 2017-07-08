@@ -95,7 +95,7 @@ object RectangleEndpointExtractor {
 
 object OrthogonalPolygonPartitioner {
   import CornerExtractor.extractCorners
-  import GeometryUtils.normalizePolygon
+  import PolygonApproximator.removeAxisAlignedCollinearity
   import RectangleEndpointExtractor.extractRectangleEndpoints
   import OrthogonalPolygonCornerExtender.extendCorners
   import scala.language.implicitConversions
@@ -175,7 +175,7 @@ object OrthogonalPolygonPartitioner {
     }
   }
 
-  def partition: Polygon => List[Rectangle] = (normalizePolygon _)
+  def partition: Polygon => List[Rectangle] = (removeAxisAlignedCollinearity _)
     .andThen(extractCorners _)
     .andThen(makeRectangleCorners _)
     .andThen(extractRectangles _)
