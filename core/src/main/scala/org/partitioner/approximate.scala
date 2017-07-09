@@ -1,21 +1,23 @@
 package org.partitioner
 
+import scala.annotation.switch
 import scala.collection.JavaConverters._
+
 import com.vividsolutions.jts.densify.Densifier
-import com.vividsolutions.jts.simplify.DouglasPeuckerSimplifier
+import com.vividsolutions.jts.simplify.{DouglasPeuckerSimplifier, TopologyPreservingSimplifier}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, LinearRing, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+
 import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
 object PolygonApproximator {
-  private[this] def polygon2Vertices(pg: Polygon): List[Vertex] = {
+  def polygon2Vertices(pg: Polygon): List[Vertex] = {
     val boundary: List[Coordinate] = pg.toList
     Stream
       .continually(boundary)
       .flatten
       .take(boundary.length * 2)
-      .toList
       .sliding(2, 1)
       .map(Vertex.apply)
       .toList
@@ -61,19 +63,54 @@ object PolygonApproximator {
     ).norm.asInstanceOf[Polygon]
   }
 
-  def simplify(polygon: Polygon, tolerance: Double): Polygon = {
+  /**
+   * Returns a simplified version of the input polygon.
+   *
+   * Under the hood this calls the simplify method in either
+   * DouglasPeuckerSimplifier or TopologyPreservingSimplifier
+   * from JTS. In general, the simplifier in DouglasPeuckerSimplifier
+   * does not preserve topology. This means polygons can be split,
+   * collapse to lines or disappear holes can be created or disappear,
+   * and lines can cross. On the plus side, it is much faster than
+   * the TopologyPreservingSimplifier.
+   *
+   * @param polygon The input polygon
+   * @param tolerance The tolerance to use when simplifying the boundary.
+   *                  Must be non negative. Greater values imply a coarser
+   *                  (less accurate) output polygon.
+   * @param preserve Specifies whether the simplifying algorithm should ensure
+   *                 that the topology of the input polygon is preserved.
+   *
+   * @return Returns a simplified polygon that has been normalized
+   */
+  def simplify(
+      polygon: Polygon,
+      tolerance: Double,
+      preserve: Boolean = false): Polygon = {
+
+    val simplifier = (preserve: @switch) match {
+      case true => TopologyPreservingSimplifier.simplify _
+      case false => DouglasPeuckerSimplifier.simplify _
+    }
+
     if (0 <= tolerance && tolerance < Double.PositiveInfinity)
-      DouglasPeuckerSimplifier
-        .simplify(polygon, tolerance)
-        .norm
-        .asInstanceOf[Polygon]
+      simplifier(polygon.norm, tolerance).norm.asInstanceOf[Polygon]
     else
       polygon.norm.asInstanceOf[Polygon]
   }
 
+  /**
+   * Returns a polygon that has points along the boundary added to it.
+   *
+   * @param polygon The input polygon
+   * @param tolerance Specifies the distance tolerance when adding points
+   *                  to the boundary.
+   *
+   * @return Returns a list of non-overlapping rectangles
+   */
   def densify(polygon: Polygon, tolerance: Double): Polygon = {
     if (0 < tolerance && tolerance < Double.PositiveInfinity)
-      Densifier.densify(polygon, tolerance).norm.asInstanceOf[Polygon]
+      Densifier.densify(polygon.norm, tolerance).norm.asInstanceOf[Polygon]
     else
       polygon.norm.asInstanceOf[Polygon]
   }
@@ -81,7 +118,7 @@ object PolygonApproximator {
 
 
 object OrthogonalPolygonBuilder {
-  import PolygonApproximator.{densify, removeAxisAlignedCollinearity, simplify}
+  import PolygonApproximator.removeAxisAlignedCollinearity
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
     geometryFactory.createLineString(points.toArray).getEnvelope
@@ -155,29 +192,6 @@ object OrthogonalPolygonBuilder {
 
     geometryFactory
       .createPolygon(exterior, holes)
-      .norm
-      .asInstanceOf[Polygon]
-  }
-
-  def approximate(
-      polygon: Polygon,
-      simplifyTolerance: Double = 0,
-      densifyTolerance: Double = Double.PositiveInfinity,
-      size: Int = 3,
-      step: Int = 1): Polygon = {
-
-    val transformer: Polygon => Polygon = Function.chain(Seq(
-      simplify(_: Polygon, simplifyTolerance),
-      densify(_: Polygon, densifyTolerance),
-      createExteriorCover(_: Polygon, size, step)
-    ))
-
-    val exterior: Polygon = geometryFactory.createPolygon(polygon.toArray)
-    val approximated: List[LinearRing] = (exterior :: polygon.getHoles)
-      .map { transformer(_).getExteriorRing.asInstanceOf[LinearRing] }
-
-    geometryFactory
-      .createPolygon(approximated.head, approximated.tail.toArray)
       .norm
       .asInstanceOf[Polygon]
   }
