@@ -161,7 +161,7 @@ object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
     chords ::: verticalLines ::: horizontalLines ::: convexCorners
   }
 
-  private def extractIndex(sr: SearchResult): Int = sr match {
+  private[this] def extractIndex(sr: SearchResult): Int = sr match {
     case Found(i) => i + 1
     case InsertionPoint(i) => i
   }
@@ -201,10 +201,11 @@ object PolygonPartitioner {
   import OrthogonalPolygonBuilder.cover
 
   /**
-   * Returns a list of non-overlapping rectangles that approximately
-   * cover the input polygon.
+   * Returns a list of non-overlapping rectangles that cover the input
+   * polygon.
    *
-   * Holes can disappear from the input polygon.
+   * Holes in the input polygon need not be in output polygon. This method
+   * can be really slow when holes are present.
    *
    * @param polygon The input polygon
    * @param size a value that sets how coarse the output should be.

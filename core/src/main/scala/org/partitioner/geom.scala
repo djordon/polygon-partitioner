@@ -4,6 +4,12 @@ import com.vividsolutions.jts.algorithm.{Angle => AngleJTS}
 import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 
 
+/**
+ * A generic point on the plane
+ *
+ * @param x
+ * @param y
+ */
 case class Point(x: Double, y: Double)
 
 
@@ -60,6 +66,13 @@ trait CornerGeometry {
 }
 
 
+/**
+ * Class that represents a vertex of an orthogonal polygon
+ *
+ * @param point
+ * @param isConcave
+ * @param angle
+ */
 case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGeometry {
   def toListCorner: List[Corner] = List(this)
 }
@@ -79,7 +92,13 @@ object Corner {
     AngleJTS.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
 }
 
-
+/**
+ * A class that represents an interior line of a polygon
+ *
+ * @param source
+ * @param dest
+ * @param angle
+ */
 case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeometry {
   def isConcave: Boolean = true
   def point: Point = source
@@ -88,7 +107,12 @@ case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeom
   }
 }
 
-
+/**
+ * A class that represents a chord of an orthogonal polygon
+ *
+ * @param source
+ * @param dest
+ */
 case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   lazy val left: Corner = if (source.x < dest.x) source else dest
 
@@ -104,6 +128,12 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def yMin: Double = if (source.y < dest.y) source.y else dest.y
 }
 
+/**
+ * A class that represents a vertex of a polygon
+ *
+ * @param coord
+ * @param angle
+ */
 case class Vertex(coord: Coordinate, angle: Double)
 
 
