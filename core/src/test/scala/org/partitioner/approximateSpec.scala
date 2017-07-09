@@ -173,34 +173,6 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
         }
       }
     }
-
-    "approximate" should {
-      "lead to better approximations as densifyTolerance decreases" in {
-        val approximated0: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=0.01)
-
-        val approximated1: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=0.1)
-
-        val approximated2: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=1)
-
-        val diffArea0: Double = approximated0
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        val diffArea1: Double = approximated1
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        val diffArea2: Double = approximated2
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        diffArea0 should be < diffArea1
-        diffArea1 should be < diffArea2
-      }
-    }
   }
 }
 
