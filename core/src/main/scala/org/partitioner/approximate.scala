@@ -94,9 +94,11 @@ object PolygonApproximator {
       case false => DouglasPeuckerSimplifier.simplify _
     }
 
-    if (0 <= tolerance && tolerance < Double.PositiveInfinity)
-      simplifier(polygon.norm, tolerance).norm.asInstanceOf[Polygon]
-    else
+    if (0 <= tolerance && tolerance < Double.PositiveInfinity) {
+      val newPolygon: Geometry = simplifier(polygon.norm, tolerance)
+      newPolygon.normalize()
+      newPolygon.asInstanceOf[Polygon]
+    } else
       polygon.norm.asInstanceOf[Polygon]
   }
 
@@ -110,9 +112,11 @@ object PolygonApproximator {
    * @return Returns a list of non-overlapping rectangles
    */
   def densify(polygon: Polygon, tolerance: Double): Polygon = {
-    if (0 < tolerance && tolerance < Double.PositiveInfinity)
-      Densifier.densify(polygon.norm, tolerance).norm.asInstanceOf[Polygon]
-    else
+    if (0 < tolerance && tolerance < Double.PositiveInfinity) {
+      val newPolygon: Geometry = Densifier.densify(polygon.norm, tolerance)
+      newPolygon.normalize()
+      newPolygon.asInstanceOf[Polygon]
+    } else
       polygon.norm.asInstanceOf[Polygon]
   }
 }
@@ -191,9 +195,8 @@ object OrthogonalPolygonBuilder {
       .map(_.getExteriorRing.asInstanceOf[LinearRing])
       .toArray
 
-    geometryFactory
-      .createPolygon(exterior, holes)
-      .norm
-      .asInstanceOf[Polygon]
+    val orthogonalPolygon: Polygon = geometryFactory.createPolygon(exterior, holes)
+    orthogonalPolygon.normalize()
+    orthogonalPolygon
   }
 }
