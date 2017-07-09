@@ -97,7 +97,13 @@ object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
   import CornerExtractor.extractCorners
   import PolygonApproximator.removeAxisAlignedCollinearity
   import OrthogonalPolygonCornerExtender.extendCorners
-  import scala.language.implicitConversions
+
+  private[this] lazy val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0)
+
+  def isOrthogonalPolygon(polygon: Polygon): Boolean = {
+    val vertices: List[Vertex] = PolygonApproximator.polygon2Vertices(polygon)
+    vertices.map(_.angle).toSet == axisAlignedAngles
+  }
 
   def createInteriorLines(corners: List[List[Corner]]): List[CornerGeometry] = {
     val co: List[Corner] = corners.flatMap(_.tail)
@@ -174,54 +180,41 @@ object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
     }
   }
 
-  private[this] def partitionLiteral: Polygon => List[Rectangle] =
-    (removeAxisAlignedCollinearity _)
-      .andThen(extractCorners _)
+  private[partitioner] def partitionLiteral: Polygon => List[Rectangle] = (extractCorners _)
       .andThen(makeRectangleCorners _)
       .andThen(extractRectangles _)
 
   /**
-   * Partitions an orthogonal polygon into a list of non-overlapping rectangles.
+   * Partitions an orthogonal polygon into a list of non-overlapping
+   * rectangles.
    *
    * @param polygon the orthogonal polygon to partition
    * @return Returns a list of non-overlapping rectangles
    */
-  def partition(polygon: Polygon): List[Rectangle] = partitionLiteral(polygon)
+  def partition(polygon: Polygon): List[Rectangle] =
+    partitionLiteral { removeAxisAlignedCollinearity(polygon) }
 }
 
 
 object PolygonPartitioner {
-  import CornerExtractor.extractCorners
-  import OrthogonalPolygonPartitioner.{extractRectangles, makeRectangleCorners}
-  import OrthogonalPolygonBuilder.approximate
+  import OrthogonalPolygonPartitioner.partitionLiteral
+  import OrthogonalPolygonBuilder.cover
 
   /**
    * Returns a list of non-overlapping rectangles that approximately
    * cover the input polygon.
    *
+   * Holes can disappear from the input polygon.
+   *
    * @param polygon The input polygon
-   * @param simplifyTolerance The tolerance to use when simplifying the boundary
-   *                          before covering the input polygon with an orthogonal polygon.
-   *                          Must be non negative. Greater values imply greater
-   *                          simplification. Defaults to 0.
-   * @param densifyTolerance Specifies how many points should be added to the boundary.
-   *                         Larger values imply fewer points added to the boundary
-   *                         before covering the polygon with an orthogonal polygon.
-   * @param size
-   * @param step
+   * @param size a value that sets how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 2.
+   * @param step a value that helps set how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 0 and less size - 1.
    * @return Returns a list of non-overlapping rectangles
    */
-  def partition(
-      polygon: Polygon,
-      simplifyTolerance: Double = 0,
-      densifyTolerance: Double = Double.PositiveInfinity,
-      size: Int = 3,
-      step: Int = 1): List[Rectangle] = {
-
-    (extractCorners _)
-      .andThen(makeRectangleCorners _)
-      .andThen(extractRectangles _)(
-        approximate(polygon, simplifyTolerance, densifyTolerance, size, step)
-      )
-  }
+  def partition(polygon: Polygon, size: Int = 3, step: Int = 1): List[Rectangle] =
+    partitionLiteral { cover(polygon, size, step) }
 }
