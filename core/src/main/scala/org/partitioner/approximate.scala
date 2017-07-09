@@ -66,13 +66,14 @@ object PolygonApproximator {
   /**
    * Returns a simplified version of the input polygon.
    *
-   * Under the hood this calls the simplify method in either
+   * Under the hood this calls the simplify method in
    * DouglasPeuckerSimplifier or TopologyPreservingSimplifier
-   * from JTS. In general, the simplifier in DouglasPeuckerSimplifier
-   * does not preserve topology. This means polygons can be split,
-   * collapse to lines or disappear holes can be created or disappear,
-   * and lines can cross. On the plus side, it is much faster than
-   * the TopologyPreservingSimplifier.
+   * from JTS. When preserve is false DouglasPeuckerSimplifier is used.
+   * This means the output can be split, the output can collapse into
+   * lines or disappear entirely, holes can be created or expected holes
+   * can disappear, and lines can cross. On the plus side, it is much
+   * faster than the TopologyPreservingSimplifier based approached
+   * that corresponds to when preserve is true.
    *
    * @param polygon The input polygon
    * @param tolerance The tolerance to use when simplifying the boundary.
@@ -176,7 +177,7 @@ object OrthogonalPolygonBuilder {
     createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
   }
 
-  private[partitioner] def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
+  def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
 
     val exterior: LinearRing = boundaryCover
