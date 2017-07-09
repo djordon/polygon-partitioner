@@ -2,16 +2,11 @@ package org.partitioner
 
 import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
 import com.vividsolutions.jts.geom.util.AffineTransformation
-import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
-
-import scala.io.Source
 
 
 trait PolygonFixtures {
-  import GeometryUtils.normalizePolygon
-
-  val wktReader = new WKTReader()
+  import GeometryUtils.{normalizePolygon, loadResource}
 
   val geometryFactory = new GeometryFactory()
   val randomGeometryFactory = new RandomPointsBuilder()
@@ -25,13 +20,6 @@ trait PolygonFixtures {
       .norm
       .asInstanceOf[Polygon]
   }
-
-  def loadDirectory(dir: String) : Map[String, Polygon] = Source
-    .fromResource(dir)
-    .getLines
-    .map(f => (f, Source.fromResource(s"$dir/$f").getLines.toList.head))
-    .toMap
-    .mapValues(wktReader.read(_).asInstanceOf[Polygon])
 
   def rotatePolygons(polygonMap: Map[String, Polygon]): Map[String, Polygon] = {
     val matrices = Map(
@@ -48,8 +36,8 @@ trait PolygonFixtures {
   }
 
   lazy val orthogonalPolygonFixtures: Map[String, Polygon] =
-    rotatePolygons(loadDirectory("rectilinear"))
+    rotatePolygons(loadResource("rectilinear"))
 
-  lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("non-rectilinear")
+  lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadResource("non-rectilinear")
   lazy val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }
