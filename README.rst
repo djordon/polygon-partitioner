@@ -13,13 +13,54 @@ This package implements two main methods:
 
 1. A method that approximates a polygon by a rectilinear polygon.
 
-   This is guaranteed to cover the input with the default settings. You can change the coarseness of the approximation, leading to an output with far fewer points than the input (but without a guarantee of if covering the input).
- 
+   This is guaranteed to cover the input polygon. There are also methods that allow you to change the coarseness of the approximation.
+
 2. A method that partitions a rectilinear polygon into non-overlapping rectangles.
 
+   This method handles polygons with holes and chords.
+
+.. comments
+
+   If the input polygon is chord-free, the output is guaranteed to be the minimum number of non-overlapping rectangles.
 
 Documentation
 -------------
+
+If you want to approximate a polygon by an orthogonal polygon, do something like
+
+.. code-block:: scala
+
+   import org.partitioner.OrthogonalPolygonBuilder
+   import com.vividsolutions.jts.geom.Polygon
+
+   val myPolygon: Polygon = ...
+   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder
+     .createExteriorCover(myPolygon)
+
+
+The above does not handle holes in the input. For that, use
+
+.. code-block:: scala
+
+   import org.partitioner.OrthogonalPolygonBuilder
+   import com.vividsolutions.jts.geom.Polygon
+
+   val myPolygon: Polygon = ...
+   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder
+     .cover(myPolygon)
+
+
+The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes from the input polygon. If you want to partition an orthogonal polygon, do something like
+
+.. code-block:: scala
+
+   import org.partitioner.partition.OrthogonalPolygonPartitioner
+   import org.partitioner.Rectangle
+   import com.vividsolutions.jts.geom.Polygon
+
+   val myPolygon: Polygon = ...
+   val rectangles: List[Rectangle] = OrthogonalPolygonBuilder
+     .partition(myPolygon)
 
 
 Installation
