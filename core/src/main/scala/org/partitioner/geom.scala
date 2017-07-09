@@ -108,6 +108,6 @@ case class Vertex(coord: Coordinate, angle: Double)
 
 
 object Vertex {
-  def apply(a: List[Coordinate]) = 
-    new Vertex(a(1), AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
+  def apply(a: Iterable[Coordinate]) =
+    new Vertex(a.tail.head, AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
 }
