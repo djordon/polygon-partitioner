@@ -1,20 +1,18 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.{Polygon, GeometryFactory}
+import com.vividsolutions.jts.geom.{GeometryFactory, Polygon}
 import com.vividsolutions.jts.geom.util.AffineTransformation
 import com.vividsolutions.jts.io.WKTReader
 import com.vividsolutions.jts.shape.random.RandomPointsBuilder
 
 import scala.io.Source
 
-
 trait PolygonFixtures {
   import GeometryUtils.normalizePolygon
 
-  val wktReader = new WKTReader()
-
   val geometryFactory = new GeometryFactory()
   val randomGeometryFactory = new RandomPointsBuilder()
+  val wktReader = new WKTReader()
 
   def generatePolygon(numPoints: Int = 50): Polygon = {
     randomGeometryFactory.setNumPoints(numPoints)
@@ -51,5 +49,6 @@ trait PolygonFixtures {
     rotatePolygons(loadResources("rectilinear"))
 
   lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadResources("non-rectilinear")
+
   lazy val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }

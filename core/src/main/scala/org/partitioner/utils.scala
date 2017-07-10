@@ -7,8 +7,9 @@ import scala.io.Source
 
 
 object GeometryUtils {
-  val geometryFactory = new GeometryFactory()
-  val wktReader = new WKTReader()
+  lazy val geometryFactory = new GeometryFactory()
+  lazy val wktReader = new WKTReader()
+
 
   implicit class IterablePolygon(val pg: Polygon) extends Iterable[Coordinate] {
     override def iterator: Iterator[Coordinate] = pg.getExteriorRing.getCoordinates.toIterator
