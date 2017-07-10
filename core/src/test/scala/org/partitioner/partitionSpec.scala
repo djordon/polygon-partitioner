@@ -157,16 +157,6 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         }
       }
     }
-
-    "isOrthogonalPolygon" can {
-      "tell if the input polygon is orthogonal or not" in {
-        for (pg <- nonOrthogonalPolygonFixtures.values)
-          OrthogonalPolygonPartitioner.isOrthogonalPolygon(pg) should be (false)
-
-        for (pg <- orthogonalPolygonFixtures.values)
-          OrthogonalPolygonPartitioner.isOrthogonalPolygon(pg) should be (true)
-      }
-    }
   }
 }
 

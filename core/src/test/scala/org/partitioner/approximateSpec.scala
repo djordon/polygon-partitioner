@@ -63,6 +63,17 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
   "OrthogonalPolygonBuilder" can {
      import GeometryUtils.{IterablePolygon, createPolygon}
 
+
+    "isOrthogonalPolygon" can {
+      "tell if the input polygon is orthogonal or not" in {
+        for (pg <- nonOrthogonalPolygonFixtures.values)
+          OrthogonalPolygonBuilder.isOrthogonalPolygon(pg) should be (false)
+
+        for (pg <- orthogonalPolygonFixtures.values)
+          OrthogonalPolygonBuilder.isOrthogonalPolygon(pg) should be (true)
+      }
+    }
+
     "coverCoordinates" should {
       "create a geometry that covers the input coordinates" in {
         for (i <- 0 until 10) {

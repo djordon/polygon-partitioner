@@ -98,13 +98,6 @@ object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
   import PolygonApproximator.removeAxisAlignedCollinearity
   import OrthogonalPolygonCornerExtender.extendCorners
 
-  private[this] lazy val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0)
-
-  def isOrthogonalPolygon(polygon: Polygon): Boolean = {
-    val vertices: List[Vertex] = PolygonApproximator.polygon2Vertices(polygon)
-    vertices.map(_.angle).toSet == axisAlignedAngles
-  }
-
   def createInteriorLines(corners: List[List[Corner]]): List[CornerGeometry] = {
     val co: List[Corner] = corners.flatMap(_.tail)
 

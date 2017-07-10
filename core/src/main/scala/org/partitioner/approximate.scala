@@ -125,6 +125,13 @@ object PolygonApproximator {
 object OrthogonalPolygonBuilder {
   import PolygonApproximator.removeAxisAlignedCollinearity
 
+  private[this] lazy val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0)
+
+  def isOrthogonalPolygon(polygon: Polygon): Boolean = {
+    val vertices: List[Vertex] = PolygonApproximator.polygon2Vertices(polygon)
+    vertices.map(_.angle).toSet == axisAlignedAngles
+  }
+
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
     geometryFactory.createLineString(points.toArray).getEnvelope
   }
