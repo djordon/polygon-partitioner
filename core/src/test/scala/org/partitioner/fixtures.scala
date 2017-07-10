@@ -26,7 +26,7 @@ trait PolygonFixtures {
       .asInstanceOf[Polygon]
   }
 
-  def loadDirectory(dir: String) : Map[String, Polygon] = Source
+  def loadResources(dir: String) : Map[String, Polygon] = Source
     .fromResource(dir)
     .getLines
     .map(f => (f, Source.fromResource(s"$dir/$f").mkString))
@@ -48,8 +48,8 @@ trait PolygonFixtures {
   }
 
   lazy val orthogonalPolygonFixtures: Map[String, Polygon] =
-    rotatePolygons(loadDirectory("rectilinear"))
+    rotatePolygons(loadResources("rectilinear"))
 
-  lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadDirectory("non-rectilinear")
+  lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] = loadResources("non-rectilinear")
   lazy val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }
