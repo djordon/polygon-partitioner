@@ -29,7 +29,7 @@ trait PolygonFixtures {
   def loadDirectory(dir: String) : Map[String, Polygon] = Source
     .fromResource(dir)
     .getLines
-    .map(f => (f, Source.fromResource(s"$dir/$f").getLines.toList.head))
+    .map(f => (f, Source.fromResource(s"$dir/$f").mkString))
     .toMap
     .mapValues(wktReader.read(_).asInstanceOf[Polygon])
 
