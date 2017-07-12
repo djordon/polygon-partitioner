@@ -2,7 +2,18 @@ package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
-import com.vividsolutions.jts.geom.{Polygon, MultiPoint}
+import com.vividsolutions.jts.algorithm.Angle
+import com.vividsolutions.jts.geom.{Coordinate, MultiPoint, Polygon}
+
+
+case class Vertex(coord: Coordinate, angle: Double)
+
+
+object Vertex {
+  def apply(coordinates: Iterable[Coordinate]) = coordinates match {
+    case b :: c :: Nil => new Vertex(c, Angle.toDegrees(Angle.angle(b, c)))
+  }
+}
 
 
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
