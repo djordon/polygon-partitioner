@@ -12,39 +12,37 @@ import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
 object PolygonApproximator {
-  def polygon2Vertices(pg: Polygon): List[Vertex] = {
+  def polygon2Vertices(pg: Polygon): List[Coordinate] = {
     val boundary: List[Coordinate] = pg.toList
     Stream
       .continually(boundary)
       .flatten
       .take(boundary.length * 2)
-      .sliding(2, 1)
-      .map(Vertex.apply)
       .toList
   }
 
-  private[this] def filterVertices(vertices: List[Vertex]): List[Vertex] = {
-    val reduced: List[Vertex] = vertices
+  private[this] def filterVertices(vertices: List[Coordinate]): List[Coordinate] = {
+    val reduced: List[Coordinate] = vertices
       .drop(2)
       .foldLeft(vertices.take(2))(rectilinearFolder)
 
-    val boundary: List[Vertex] = reduced.take(reduced.length / 2 + 1).tail
-    val last: Vertex = boundary.last
+    val boundary: List[Coordinate] = reduced.take(reduced.length / 2 + 1).tail
+    val last: Coordinate = boundary.last
 
     if (last == boundary.head) boundary else last :: boundary
   }
 
-  private[this] def isAxisAligned(a: List[Vertex]): Boolean = {
-    (a(0).coord.x == a(2).coord.x && a(1).coord.x == a(2).coord.x) ||
-    (a(0).coord.y == a(2).coord.y && a(1).coord.y == a(2).coord.y)
+  private[this] def isAxisAligned: PartialFunction[List[Coordinate], Boolean] = {
+    case a :: b :: c :: Nil => (a.x == c.x && b.x == c.x) ||
+                               (a.y == c.y && b.y == c.y)
   }
 
-  private[this] def rectilinearFolder(a: List[Vertex], b: Vertex): List[Vertex] = {
+  private[this] def rectilinearFolder(a: List[Coordinate], b: Coordinate): List[Coordinate] = {
     if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
-  private[this] def vertices2polygon(vertices: List[Vertex]): Polygon = {
-    geometryFactory.createPolygon(vertices.map(_.coord).toArray)
+  private[this] def vertices2polygon(vertices: List[Coordinate]): Polygon = {
+    geometryFactory.createPolygon(vertices.toArray)
   }
 
   private[this] def removeAxisAlignedCollinearitySimple: Polygon => Polygon = {
@@ -125,11 +123,12 @@ object PolygonApproximator {
 object OrthogonalPolygonBuilder {
   import PolygonApproximator.removeAxisAlignedCollinearity
 
-  private[this] lazy val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0)
-
   def isOrthogonalPolygon(polygon: Polygon): Boolean = {
-    val vertices: List[Vertex] = PolygonApproximator.polygon2Vertices(polygon)
-    vertices.map(_.angle).toSet == axisAlignedAngles
+    polygon
+      .toList
+      .sliding(2, 1)
+      .collect { case a :: b :: Nil => a.x == b.x || a.y == b.y }
+      .reduce(_ && _)
   }
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
