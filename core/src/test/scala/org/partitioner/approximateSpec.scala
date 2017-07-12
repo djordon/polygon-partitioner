@@ -53,6 +53,13 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
           newPolygon2 shouldEqual normalizePolygon(pg)
         }
       }
+
+      "Increase the number of points along the boundary" in {
+        for (pg <- fixtures.values) {
+          val newPolygon = PolygonApproximator.densify(pg, 0.1)
+          newPolygon.getNumPoints should be >= pg.getNumPoints
+        }
+      }
     }
 
     "simplify" should {
@@ -63,6 +70,17 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
           val newPolygon2 = PolygonApproximator.simplify(pg, -1)
           newPolygon2 shouldEqual normalizePolygon(pg)
+        }
+      }
+
+      "reduce the number of points along the boundary and preserve holes when preserve is true" in {
+        for (pg <- fixtures.values) {
+          val newPolygon1 = PolygonApproximator.simplify(pg, 0.01, true)
+          newPolygon1.getNumPoints should be <= pg.getNumPoints
+          newPolygon1.getNumInteriorRing shouldEqual (pg.getNumInteriorRing)
+
+          val newPolygon2 = PolygonApproximator.simplify(pg, 0.01, false)
+          newPolygon2.getNumPoints should be <= pg.getNumPoints
         }
       }
     }
