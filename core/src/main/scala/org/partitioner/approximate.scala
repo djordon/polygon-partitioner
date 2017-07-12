@@ -54,10 +54,12 @@ object PolygonApproximator {
       .getHoles
       .map(removeAxisAlignedCollinearitySimple)
 
-    geometryFactory.createPolygon(
+    val polygon: Polygon = geometryFactory.createPolygon(
       shell.getExteriorRing.asInstanceOf[LinearRing],
       holes.map(_.getExteriorRing.asInstanceOf[LinearRing]).toArray
-    ).norm.asInstanceOf[Polygon]
+    )
+    polygon.normalize()
+    polygon
   }
 
   /**
