@@ -33,8 +33,7 @@ object PolygonApproximator {
   }
 
   private[this] def isAxisAligned: PartialFunction[List[Coordinate], Boolean] = {
-    case a :: b :: c :: Nil => (a.x == c.x && b.x == c.x) ||
-                               (a.y == c.y && b.y == c.y)
+    case a :: b :: c :: Nil => (a.x == c.x && b.x == c.x) || (a.y == c.y && b.y == c.y)
   }
 
   private[this] def rectilinearFolder(a: List[Coordinate], b: Coordinate): List[Coordinate] = {
