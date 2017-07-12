@@ -85,11 +85,13 @@ object Corner {
     angle = edgeDirection(coordinates.init)
   )
 
-  def edgeDirection(vec: List[Coordinate]): Int = 
-    AngleJTS.toDegrees(AngleJTS.angle(vec.head, vec.last)).toInt
+  def edgeDirection: PartialFunction[List[Coordinate], Int] = {
+    case a :: b :: Nil => AngleJTS.toDegrees(AngleJTS.angle(a, b)).toInt
+  }
 
-  def isConcaveCorner(corner: List[Coordinate]): Boolean =
-    AngleJTS.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
+  def isConcaveCorner: PartialFunction[List[Coordinate], Boolean] = {
+    case a :: b :: c :: Nil => AngleJTS.angleBetweenOriented(a, b, c) < 0
+  }
 }
 
 /**
@@ -126,18 +128,4 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def xMin: Double = if (source.x < dest.x) source.x else dest.x
   def yMax: Double = if (source.y > dest.y) source.y else dest.y
   def yMin: Double = if (source.y < dest.y) source.y else dest.y
-}
-
-/**
- * A class that represents a vertex of a polygon
- *
- * @param coord
- * @param angle
- */
-case class Vertex(coord: Coordinate, angle: Double)
-
-
-object Vertex {
-  def apply(a: Iterable[Coordinate]) =
-    new Vertex(a.tail.head, AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
 }
