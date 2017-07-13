@@ -91,7 +91,7 @@ object PolygonApproximator {
     }
 
     if (0 <= tolerance && tolerance < Double.PositiveInfinity) {
-      val newPolygon: Geometry = simplifier(polygon.copy, tolerance)
+      val newPolygon: Geometry = simplifier(polygon.norm, tolerance)
       newPolygon.normalize()
       newPolygon.asInstanceOf[Polygon]
     } else
@@ -111,7 +111,7 @@ object PolygonApproximator {
    */
   def densify(polygon: Polygon, tolerance: Double): Polygon = {
     if (0 < tolerance && tolerance < Double.PositiveInfinity) {
-      val newPolygon: Geometry = Densifier.densify(polygon.copy, tolerance)
+      val newPolygon: Geometry = Densifier.densify(polygon.norm, tolerance)
       newPolygon.normalize()
       newPolygon.asInstanceOf[Polygon]
     } else
