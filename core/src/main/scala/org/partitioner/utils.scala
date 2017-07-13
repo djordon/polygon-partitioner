@@ -14,6 +14,8 @@ object GeometryUtils {
   implicit class IterablePolygon(val pg: Polygon) extends Iterable[Coordinate] {
     override def iterator: Iterator[Coordinate] = pg.getExteriorRing.getCoordinates.toIterator
 
+    def copy: Polygon = super.clone.asInstanceOf[Polygon]
+
     def getHoles: List[Polygon] = {
       val holes: IndexedSeq[LineString] = for {i <- 0 until pg.getNumInteriorRing }
         yield pg.getInteriorRingN(i)
