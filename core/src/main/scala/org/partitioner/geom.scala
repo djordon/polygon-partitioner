@@ -7,8 +7,8 @@ import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 /**
  * A generic point on the plane
  *
- * @param x
- * @param y
+ * @param x the x-coordinate
+ * @param y the y-coordinate
  */
 case class Point(x: Double, y: Double)
 
@@ -69,8 +69,9 @@ trait CornerGeometry {
 /**
  * Class that represents a vertex of an orthogonal polygon
  *
- * @param point
- * @param isConcave
+ * @param point the coordinates of the vertex
+ * @param isConcave whether or not the interior angle at that point is
+ *                  90 or 270 degrees.
  * @param angle
  */
 case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGeometry {
