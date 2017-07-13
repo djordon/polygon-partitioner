@@ -40,24 +40,21 @@ object PolygonApproximator {
     if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
-  private[this] def vertices2polygon(vertices: List[Coordinate]): Polygon = {
-    geometryFactory.createPolygon(vertices.toArray)
+  private[this] def vertices2LinearRing(vertices: List[Coordinate]): LinearRing = {
+    geometryFactory.createLinearRing(vertices.toArray)
   }
 
-  private[this] def removeAxisAlignedCollinearitySimple: Polygon => Polygon = {
-    polygon2Vertices _ andThen filterVertices _ andThen vertices2polygon _
+  private[this] def removeAxisAlignedCollinearitySimple: Polygon => LinearRing = {
+    polygon2Vertices _ andThen filterVertices _ andThen vertices2LinearRing _
   }
 
   def removeAxisAlignedCollinearity(pg: Polygon): Polygon = {
-    val shell: Polygon = removeAxisAlignedCollinearitySimple(pg)
-    val holes: List[Polygon] = pg
+    val shell: LinearRing = removeAxisAlignedCollinearitySimple(pg)
+    val holes: List[LinearRing] = pg
       .getHoles
       .map(removeAxisAlignedCollinearitySimple)
 
-    val polygon: Polygon = geometryFactory.createPolygon(
-      shell.getExteriorRing.asInstanceOf[LinearRing],
-      holes.map(_.getExteriorRing.asInstanceOf[LinearRing]).toArray
-    )
+    val polygon: Polygon = geometryFactory.createPolygon(shell, holes.toArray)
     polygon.normalize()
     polygon
   }
@@ -94,7 +91,7 @@ object PolygonApproximator {
     }
 
     if (0 <= tolerance && tolerance < Double.PositiveInfinity) {
-      val newPolygon: Geometry = simplifier(polygon.norm, tolerance)
+      val newPolygon: Geometry = simplifier(polygon.copy, tolerance)
       newPolygon.normalize()
       newPolygon.asInstanceOf[Polygon]
     } else
@@ -104,6 +101,8 @@ object PolygonApproximator {
   /**
    * Returns a polygon that has points along the boundary added to it.
    *
+   * The input polygon is not modified.
+   *
    * @param polygon The input polygon
    * @param tolerance Specifies the distance tolerance when adding points
    *                  to the boundary.
@@ -112,7 +111,7 @@ object PolygonApproximator {
    */
   def densify(polygon: Polygon, tolerance: Double): Polygon = {
     if (0 < tolerance && tolerance < Double.PositiveInfinity) {
-      val newPolygon: Geometry = Densifier.densify(polygon.norm, tolerance)
+      val newPolygon: Geometry = Densifier.densify(polygon.copy, tolerance)
       newPolygon.normalize()
       newPolygon.asInstanceOf[Polygon]
     } else
