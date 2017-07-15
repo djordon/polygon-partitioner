@@ -30,7 +30,7 @@ object PolygonAugmenter {
     if (last == boundary.head) boundary else last :: boundary
   }
 
-  private[this] def isAxisAligned: PartialFunction[List[Coordinate], Boolean] = {
+  private[this] def isAxisAligned(co: List[Coordinate]): Boolean = (co: @unchecked) match {
     case a :: b :: c :: Nil => (a.x == c.x && b.x == c.x) || (a.y == c.y && b.y == c.y)
   }
 
