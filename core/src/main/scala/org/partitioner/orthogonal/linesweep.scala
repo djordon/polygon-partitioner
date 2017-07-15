@@ -11,7 +11,7 @@ case class LineContainer(
     cornerLines: List[CornerLine] = Nil)
 
 
-trait RectilinearLineSweeper {
+trait AxisAlignedLineSweeper {
   def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
     implicit vertical: Boolean): Map[String, List[CornerGeometry]]
 
@@ -63,7 +63,7 @@ trait RectilinearLineSweeper {
 }
 
 
-object OrthogonalPolygonCornerExtender extends RectilinearLineSweeper {
+object OrthogonalPolygonCornerExtender extends AxisAlignedLineSweeper {
 
   override def lineAction(treeSet: TreeSet[Double])(cn: CornerGeometry): CornerLine = {
     super.lineAction(treeSet - cn.w)(cn)
@@ -106,7 +106,7 @@ object OrthogonalPolygonCornerExtender extends RectilinearLineSweeper {
 }
 
 
-object CornerLineAdjuster extends RectilinearLineSweeper {
+object CornerLineAdjuster extends AxisAlignedLineSweeper {
 
   def setActions(corners: List[CornerGeometry], opened: TreeSet[Double])(
     implicit vertical: Boolean): Map[String, List[Corner]] = {
