@@ -47,15 +47,33 @@ object PolygonAugmenter {
     polygon2Vertices _ andThen filterVertices _ andThen vertices2LinearRing _
   }
 
-  def removeAxisAlignedCollinearity(pg: Polygon): Polygon = {
-    val shell: LinearRing = removeAxisAlignedCollinearitySimple(pg)
-    val holes: List[LinearRing] = pg
+  /**
+   * Returns a topologically equivalent polygon where axis aligned line
+   * segments are as long as possible.
+   *
+   * A polygon can contain superfluous points along the boundary, where
+   * removing such points does not change the shape. This method removes
+   * instances where these superfluous points occur on axis aligned line
+   * segments.
+   *
+   * The input polygon is not modified.
+   *
+   * An example of this is where the input is a rectangle with 5 points
+   * (where a point was added at the midpoint of the top edge). This
+   * function would return the same rectangle, but with 4 points.
+   *
+   * @param polygon the input polygon
+   * @return an modified version of the input polygon.
+   */
+  def removeAxisAlignedCollinearity(polygon: Polygon): Polygon = {
+    val shell: LinearRing = removeAxisAlignedCollinearitySimple(polygon)
+    val holes: List[LinearRing] = polygon
       .getHoles
       .map(removeAxisAlignedCollinearitySimple)
 
-    val polygon: Polygon = geometryFactory.createPolygon(shell, holes.toArray)
-    polygon.normalize()
-    polygon
+    val pg: Polygon = geometryFactory.createPolygon(shell, holes.toArray)
+    pg.normalize()
+    pg
   }
 
   /**
@@ -70,14 +88,14 @@ object PolygonAugmenter {
    * faster than the TopologyPreservingSimplifier based approached
    * that corresponds to when preserve is true.
    *
-   * @param polygon The input polygon
+   * @param polygon The input polygon.
    * @param tolerance The tolerance to use when simplifying the boundary.
    *                  Must be non negative. Greater values imply a coarser
    *                  (less accurate) output polygon.
    * @param preserve Specifies whether the simplifying algorithm should ensure
    *                 that the topology of the input polygon is preserved.
    *
-   * @return Returns a simplified polygon that has been normalized
+   * @return Returns a simplified polygon that has been normalized.
    */
   def simplify(
       polygon: Polygon,
@@ -102,11 +120,11 @@ object PolygonAugmenter {
    *
    * The input polygon is not modified.
    *
-   * @param polygon The input polygon
+   * @param polygon The input polygon.
    * @param tolerance Specifies the distance tolerance when adding points
    *                  to the boundary.
    *
-   * @return Returns a list of non-overlapping rectangles
+   * @return Returns a list of non-overlapping rectangles.
    */
   def densify(polygon: Polygon, tolerance: Double): Polygon = {
     if (0 < tolerance && tolerance < Double.PositiveInfinity) {
@@ -121,14 +139,6 @@ object PolygonAugmenter {
 
 object OrthogonalPolygonBuilder {
   import PolygonAugmenter.removeAxisAlignedCollinearity
-
-  def isOrthogonalPolygon(polygon: Polygon): Boolean = {
-    polygon
-      .toList
-      .sliding(2, 1)
-      .collect { case a :: b :: Nil => a.x == b.x || a.y == b.y }
-      .reduce(_ && _)
-  }
 
   def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
     geometryFactory.createLineString(points.toArray).getEnvelope
@@ -158,7 +168,7 @@ object OrthogonalPolygonBuilder {
   /**
    * Creates an orthogonal polygon that covers the input polygon
    *
-   * @param polygon the input polygon
+   * @param polygon the input polygon.
    * @param size a value that sets how coarse the output should be.
    *             The larger the value, the more coarse the out put will be.
    *             Must be greater than 2.
@@ -166,7 +176,7 @@ object OrthogonalPolygonBuilder {
    *             The larger the value, the more coarse the out put will be.
    *             Must be greater than 0 and less size - 1.
    *
-   * @return Returns an orthogonal polygon
+   * @return Returns an orthogonal polygon.
    */
   def createExteriorCover(
       polygon: Polygon,
@@ -186,6 +196,24 @@ object OrthogonalPolygonBuilder {
     createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
   }
 
+  /**
+   * Creates an orthogonal polygon that covers the input polygon.
+   *
+   * This function attempts to find an orthogonal polygon that has as
+   * many holes as the input polygon, but it does not always succeed in
+   * doing so. Because this method attempts to accommodate holes while
+   * covering the polygon, it can be quite computational intensive
+   * compared to other methods in this package.
+   *
+   * @param polygon the input polygon.
+   * @param size a value that sets how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 2.
+   * @param step a value that helps set how coarse the output should be.
+   *             The larger the value, the more coarse the out put will be.
+   *             Must be greater than 0 and less size - 1.
+   * @return returns an orthogonal polygon.
+   */
   def cover(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
 
