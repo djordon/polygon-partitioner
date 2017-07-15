@@ -66,12 +66,24 @@ The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes
 Installation
 ------------
 
+The following installs `polygon-partitioner` and all the submodules, which includes `core`, `plot`, and `db`.
+
 .. code-block:: scala
 
    lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git"))
 
    lazy val root = Project("root", file("."))
      .dependsOn(partitioner)
+
+
+If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then use something like the following
+
+.. code-block:: scala
+
+   lazy val partitionerCore = ProjectRef(uri("git://github.com/djordon/polygon-partitioner.git"), "core")
+
+   lazy val root = Project("root", file("."))
+     .dependsOn(partitionerCore)
 
 
 Bugs and issues
