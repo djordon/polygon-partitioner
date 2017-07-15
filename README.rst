@@ -76,7 +76,7 @@ The following installs `polygon-partitioner` and all the submodules, which inclu
      .dependsOn(partitioner)
 
 
-If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then use something like the following
+If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then you can install it with something like the following
 
 .. code-block:: scala
 
