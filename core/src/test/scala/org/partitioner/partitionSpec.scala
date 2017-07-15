@@ -307,13 +307,12 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures {
   import PolygonPartitioner.partition
   import RectangleUnion.rectangles2Polygon
-  import GeometryUtils.createPolygon
 
   "PolygonPartitioner" can {
     "partition" should {
       "Create a rectangles that union to a polygon that cover the original" in {
         for (pg <- fixtures.values) {
-          val pgWithoutHoles = createPolygon(pg.getExteriorRing.getCoordinates)
+          val pgWithoutHoles = geometryFactory.createPolygon(pg.getExteriorRing.getCoordinates)
           val rectangles: List[Rectangle] = partition(pgWithoutHoles)
           val polygon: Polygon = rectangles2Polygon(rectangles)
 

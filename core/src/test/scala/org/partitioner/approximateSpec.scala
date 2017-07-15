@@ -90,18 +90,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFixtures {
 
   "OrthogonalPolygonBuilder" can {
-     import GeometryUtils.{IterablePolygon, createPolygon}
-
-
-    "isOrthogonalPolygon" can {
-      "tell if the input polygon is orthogonal or not" in {
-        for (pg <- nonOrthogonalPolygonFixtures.values)
-          OrthogonalPolygonBuilder.isOrthogonalPolygon(pg) should be (false)
-
-        for (pg <- orthogonalPolygonFixtures.values)
-          OrthogonalPolygonBuilder.isOrthogonalPolygon(pg) should be (true)
-      }
-    }
+     import GeometryUtils.IterablePolygon
 
     "coverCoordinates" should {
       "create a geometry that covers the input coordinates" in {
@@ -206,7 +195,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
           val interior: List[Polygon] = OrthogonalPolygonBuilder
             .createInteriorCover(polygon)
 
-          val exterior: Polygon = createPolygon(polygon.getExteriorRing.getCoordinates)
+          val exterior: Polygon = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
 
           for (pg <- interior)
             exterior contains pg should be (true)
