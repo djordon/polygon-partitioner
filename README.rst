@@ -59,7 +59,7 @@ The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes
    import com.vividsolutions.jts.geom.Polygon
 
    val myPolygon: Polygon = ...
-   val rectangles: List[Rectangle] = OrthogonalPolygonBuilder
+   val rectangles: List[Rectangle] = OrthogonalPolygonPartitioner
      .partition(myPolygon)
 
 
