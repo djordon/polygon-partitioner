@@ -9,7 +9,7 @@ import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
-object PolygonApproximator {
+object PolygonAugmenter {
   def polygon2Vertices(pg: Polygon): List[Coordinate] = {
     val boundary: List[Coordinate] = pg.toList
     Stream
@@ -119,7 +119,7 @@ object PolygonApproximator {
 
 
 object OrthogonalPolygonBuilder {
-  import PolygonApproximator.removeAxisAlignedCollinearity
+  import PolygonAugmenter.removeAxisAlignedCollinearity
 
   def isOrthogonalPolygon(polygon: Polygon): Boolean = {
     polygon

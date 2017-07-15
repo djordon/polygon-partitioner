@@ -6,6 +6,7 @@ import org.partitioner._
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
 import scala.language.implicitConversions
 
+
 case class EndpointStacks(
     upperLeft: List[Point] = Nil,
     lowerLeft: List[Point] = Nil,
@@ -95,7 +96,7 @@ trait RectangleEndpointExtractor {
 
 object OrthogonalPolygonPartitioner extends RectangleEndpointExtractor {
   import CornerExtractor.extractCorners
-  import PolygonApproximator.removeAxisAlignedCollinearity
+  import PolygonAugmenter.removeAxisAlignedCollinearity
   import OrthogonalPolygonCornerExtender.extendCorners
 
   def createInteriorLines(corners: List[List[Corner]]): List[CornerGeometry] = {

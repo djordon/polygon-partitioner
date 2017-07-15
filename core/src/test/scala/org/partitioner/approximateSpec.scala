@@ -25,17 +25,17 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
     "removeAxisAlignedCollinearity" should {
       "remove redundant points that lie on axis aligned lines" in {
-        val simplified: Polygon = PolygonApproximator
+        val simplified: Polygon = PolygonAugmenter
           .removeAxisAlignedCollinearity(fixtures("redundantBasisPointPolygon"))
 
         simplified shouldEqual fixtures("simplePolygon")
       }
 
       "keep redundant points that lie on non-axis aligned lines" in {
-        val simplified: Polygon = PolygonApproximator
+        val simplified: Polygon = PolygonAugmenter
           .removeAxisAlignedCollinearity(fixtures("redundantPointPolygon"))
 
-        val nothingHappened: Polygon = PolygonApproximator
+        val nothingHappened: Polygon = PolygonAugmenter
           .removeAxisAlignedCollinearity(fixtures("preDensifiedPolygon"))
 
         simplified shouldEqual fixtures("lessRedundantPointPolygon")
@@ -46,17 +46,17 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
     "densify" should {
       "Do nothing when the tolerance is positive infinity or zero" in {
         for (pg <- fixtures.values) {
-          val newPolygon1 = PolygonApproximator.densify(pg, Double.PositiveInfinity)
+          val newPolygon1 = PolygonAugmenter.densify(pg, Double.PositiveInfinity)
           newPolygon1 shouldEqual normalizePolygon(pg)
 
-          val newPolygon2 = PolygonApproximator.densify(pg, 0.0)
+          val newPolygon2 = PolygonAugmenter.densify(pg, 0.0)
           newPolygon2 shouldEqual normalizePolygon(pg)
         }
       }
 
       "Increase the number of points along the boundary" in {
         for (pg <- fixtures.values) {
-          val newPolygon = PolygonApproximator.densify(pg, 0.1)
+          val newPolygon = PolygonAugmenter.densify(pg, 0.1)
           newPolygon.getNumPoints should be >= pg.getNumPoints
         }
       }
@@ -65,21 +65,21 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
     "simplify" should {
       "Do nothing when the tolerance is positive infinity or less than zero" in {
         for (pg <- fixtures.values) {
-          val newPolygon1 = PolygonApproximator.simplify(pg, Double.PositiveInfinity)
+          val newPolygon1 = PolygonAugmenter.simplify(pg, Double.PositiveInfinity)
           newPolygon1 shouldEqual normalizePolygon(pg)
 
-          val newPolygon2 = PolygonApproximator.simplify(pg, -1)
+          val newPolygon2 = PolygonAugmenter.simplify(pg, -1)
           newPolygon2 shouldEqual normalizePolygon(pg)
         }
       }
 
       "reduce the number of points along the boundary and preserve holes when preserve is true" in {
         for (pg <- fixtures.values) {
-          val newPolygon1 = PolygonApproximator.simplify(pg, 0.01, true)
+          val newPolygon1 = PolygonAugmenter.simplify(pg, 0.01, true)
           newPolygon1.getNumPoints should be <= pg.getNumPoints
           newPolygon1.getNumInteriorRing shouldEqual (pg.getNumInteriorRing)
 
-          val newPolygon2 = PolygonApproximator.simplify(pg, 0.01, false)
+          val newPolygon2 = PolygonAugmenter.simplify(pg, 0.01, false)
           newPolygon2.getNumPoints should be <= pg.getNumPoints
         }
       }
