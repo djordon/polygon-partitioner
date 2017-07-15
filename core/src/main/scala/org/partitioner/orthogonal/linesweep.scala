@@ -1,4 +1,4 @@
-package org.partitioner.partition
+package org.partitioner.orthogonal
 
 import org.partitioner._
 

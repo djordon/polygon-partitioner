@@ -54,7 +54,7 @@ The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes
 
 .. code-block:: scala
 
-   import org.partitioner.partition.OrthogonalPolygonPartitioner
+   import org.partitioner.orthogonal.OrthogonalPolygonPartitioner
    import org.partitioner.Rectangle
    import com.vividsolutions.jts.geom.Polygon
 

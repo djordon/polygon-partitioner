@@ -1,6 +1,6 @@
 package org.partitioner
 
-import org.partitioner.partition._
+import org.partitioner.orthogonal._
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.util.Random

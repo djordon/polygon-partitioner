@@ -3,7 +3,7 @@ package org.partitioner
 import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon}
 import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
-import org.partitioner.partition._
+import org.partitioner.orthogonal._
 
 import scala.collection.JavaConverters._
 import scala.language.reflectiveCalls
@@ -305,7 +305,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
 
 class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures {
-  import partition.PolygonPartitioner.partition
+  import orthogonal.PolygonPartitioner.partition
   import RectangleUnion.rectangles2Polygon
   import GeometryUtils.createPolygon
 

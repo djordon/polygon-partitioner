@@ -1,4 +1,4 @@
-package org.partitioner.partition
+package org.partitioner.orthogonal
 
 import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 import org.partitioner._

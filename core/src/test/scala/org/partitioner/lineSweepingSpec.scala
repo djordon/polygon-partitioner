@@ -2,7 +2,7 @@ package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.geom.{Polygon, Coordinate, LineString}
-import org.partitioner.partition._
+import org.partitioner.orthogonal._
 
 import scala.collection.immutable.TreeSet
 import scala.language.reflectiveCalls
