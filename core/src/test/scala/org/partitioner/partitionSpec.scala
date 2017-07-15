@@ -305,7 +305,7 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
 
 class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures {
-  import orthogonal.PolygonPartitioner.partition
+  import PolygonPartitioner.partition
   import RectangleUnion.rectangles2Polygon
   import GeometryUtils.createPolygon
 
