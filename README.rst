@@ -11,11 +11,11 @@ Features
 
 This package implements two main methods:
 
-1. A method that approximates a polygon by a rectilinear polygon.
+1. A method that approximates a polygon by a orthogonal polygon.
 
    This is guaranteed to cover the input polygon. There are also methods that allow you to change the coarseness of the approximation.
 
-2. A method that partitions a rectilinear polygon into non-overlapping rectangles.
+2. A method that partitions a orthogonal polygon into non-overlapping rectangles.
 
    This method handles polygons with holes and chords.
 

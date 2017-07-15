@@ -46,10 +46,10 @@ trait PolygonFixtures {
   }
 
   lazy val orthogonalPolygonFixtures: Map[String, Polygon] =
-    rotatePolygons(loadResources("rectilinear"))
+    rotatePolygons(loadResources("orthogonal-polygons"))
 
   lazy val nonOrthogonalPolygonFixtures: Map[String, Polygon] =
-    loadResources("non-rectilinear")
+    loadResources("non-orthogonal-polygon")
 
   lazy val fixtures = orthogonalPolygonFixtures ++ nonOrthogonalPolygonFixtures
 }

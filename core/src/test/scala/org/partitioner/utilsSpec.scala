@@ -11,11 +11,11 @@ class GeometryUtilsSpec extends WordSpec with Matchers {
   "loadResources" can {
     "load polygons from the resources folder" in {
 
-      val polygons1: Map[String, Polygon] = GeometryUtils.loadResources("rectilinear")
+      val polygons1: Map[String, Polygon] = GeometryUtils.loadResources("orthogonal-polygons")
       polygons1.toList.length should be > 0
       polygons1.values.map(isOrthogonalPolygon).reduce(_ && _) should be (true)
 
-      val polygons2: Map[String, Polygon] = GeometryUtils.loadResources("non-rectilinear")
+      val polygons2: Map[String, Polygon] = GeometryUtils.loadResources("non-orthogonal-polygon")
       polygons2.toList.length should be > 0
       polygons2.values.map(isOrthogonalPolygon).reduce(_ && _) should be (false)
 
