@@ -19,12 +19,17 @@ This package implements two main methods:
 
    This method handles polygons with holes and chords.
 
+The functions in this package use `JTS <https://github.com/locationtech/jts>`__ `Polygons` as the class for the input Polygon.
+
 .. comments
 
    If the input polygon is chord-free, the output is guaranteed to be the minimum number of non-overlapping rectangles.
 
 Documentation
 -------------
+
+### Covering a polygon with an orthogonal polygon
+
 
 If you want to approximate a polygon by an orthogonal polygon, do something like
 
@@ -34,8 +39,7 @@ If you want to approximate a polygon by an orthogonal polygon, do something like
    import com.vividsolutions.jts.geom.Polygon
 
    val myPolygon: Polygon = ...
-   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder
-     .createExteriorCover(myPolygon)
+   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder.createExteriorCover(myPolygon)
 
 
 The above does not handle holes in the input. For that, use
@@ -46,11 +50,15 @@ The above does not handle holes in the input. For that, use
    import com.vividsolutions.jts.geom.Polygon
 
    val myPolygon: Polygon = ...
-   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder
-     .cover(myPolygon)
+   val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder.cover(myPolygon)
 
 
-The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes from the input polygon. If you want to partition an orthogonal polygon, do something like
+Note that the output polygon in the above example is not guaranteed to have as many holes from the input polygon.
+
+
+### Partitioning an polygon
+
+If you want to partition an orthogonal polygon into non-overlapping rectangles, use the following
 
 .. code-block:: scala
 
@@ -59,14 +67,25 @@ The output polygon, `orthogonalPolygon`, is not guaranteed to have as many holes
    import com.vividsolutions.jts.geom.Polygon
 
    val myPolygon: Polygon = ...
-   val rectangles: List[Rectangle] = OrthogonalPolygonPartitioner
-     .partition(myPolygon)
+   val rectangles: List[Rectangle] = OrthogonalPolygonPartitioner.partition(myPolygon)
+
+
+If you want to find a collection of non-overlapping rectangles whose union covers the input, use the following
+
+.. code-block:: scala
+
+   import org.partitioner.PolygonPartitioner
+   import org.partitioner.Rectangle
+   import com.vividsolutions.jts.geom.Polygon
+
+   val myPolygon: Polygon = ...
+   val rectangles: List[Rectangle] = PolygonPartitioner.partition(myPolygon)
 
 
 Installation
 ------------
 
-The following installs `polygon-partitioner` and all the submodules, which includes `core`, `plot`, and `db`.
+The following installs ``polygon-partitioner`` and all the submodules, which includes ``core``, ``plot``, and ``db``.
 
 .. code-block:: scala
 
@@ -76,7 +95,7 @@ The following installs `polygon-partitioner` and all the submodules, which inclu
      .dependsOn(partitioner)
 
 
-If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then you can install it with something like the following
+If you only want the algorithms in the ``core`` module and don't care about the plotting and db modules, then you can install it with something like the following
 
 .. code-block:: scala
 
