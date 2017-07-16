@@ -19,7 +19,7 @@ lazy val core = (project in file("core"))
   .settings(
     Seq(
       name := "polygon-partitioner-core",
-      version := "0.1.0-SNAPSHOT",
+      version := "0.1.0",
       coverageEnabled := true
     ),
     libraryDependencies ++= coreDependencies
@@ -30,7 +30,7 @@ lazy val plot = (project in file("plot"))
   .settings(
     Seq(
       name := "polygon-partitioner-plot",
-      version := "0.1.0-SNAPSHOT",
+      version := "0.1.0",
       coverageEnabled := false
     ),
     libraryDependencies ++= plotDependencies)
@@ -41,7 +41,7 @@ lazy val db = (project in file("db"))
   .settings(
     Seq(
       name := "polygon-partitioner-db",
-      version := "0.1.0-SNAPSHOT",
+      version := "0.1.0",
       coverageEnabled := false
     ),
     libraryDependencies ++= dbDependencies)
