@@ -7,6 +7,7 @@ Polygon-partitioner
 
 This is mainly for partitioning polygons into disjoint rectangles. Because you never know when you need to partition some polygons.
 
+
 Features
 --------
 
@@ -21,6 +22,7 @@ This package implements two main methods:
     This method handles polygons with holes and chords.
 
 The functions in this package use [JTS](https://github.com/locationtech/jts) Polygons as the class for the input Polygon.
+
 
 Installation
 ------------
@@ -43,8 +45,10 @@ lazy val partitionerCore = ProjectRef(uri("git://github.com/djordon/polygon-part
 lazy val root = Project("root", file(".")).dependsOn(partitionerCore)
 ```
 
+
 Documentation
 -------------
+
 
 ### Covering a polygon with an orthogonal polygon
 
@@ -72,6 +76,7 @@ Note that the output polygon in the above example is not guaranteed to have as m
 
 For both `createExteriorCover` and `cover`, there are parameters that you can use to tune the coarseness of the cover. The default settings return the finest orthogonal polygon that covers the input using the covering algorithm implemented here. 
 
+
 ### Partitioning an polygon
 
 If you want to partition an orthogonal polygon into non-overlapping rectangles, use the following
@@ -95,10 +100,14 @@ val myPolygon: Polygon = ...
 val rectangles: List[Rectangle] = PolygonPartitioner.partition(myPolygon)
 ```
 
+Note that, under the hood, `PolygonPartitioner.partition` calls the `cover` method followed by the orthogonal polygon `partition` method. The `cover` method can be relatively slow for polygons with holes and many points along the boundary.
+
+
 Bugs and issues
 ---------------
 
 File bugs/issues/requests at <https://github.com/djordon/polygon-partitioner/issues>.
+
 
 Copyright and license
 ---------------------
