@@ -40,7 +40,8 @@ lazy val root = Project("root", file(".")).dependsOn(partitioner)
 If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then you can install it by adding the following to `build.sbt`:
 
 ```scala
-lazy val partitionerCore = ProjectRef(uri("git://github.com/djordon/polygon-partitioner.git"), "core")
+lazy val partitionerUri = uri("git://github.com/djordon/polygon-partitioner.git")
+lazy val partitionerCore = ProjectRef(partitionerUri, "core")
 
 lazy val root = Project("root", file(".")).dependsOn(partitionerCore)
 ```
