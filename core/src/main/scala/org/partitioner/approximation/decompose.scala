@@ -1,7 +1,7 @@
 package org.partitioner
 
 import com.vividsolutions.jts.geom.Polygon
-import orthogonal.OrthogonalPolygonPartitioner.partitionLiteral
+import org.partitioner.orthogonal.partitionBasic
 
 
 /**
@@ -23,6 +23,6 @@ import orthogonal.OrthogonalPolygonPartitioner.partitionLiteral
 object decompose extends Function3[Polygon, Int, Int, List[Rectangle]] {
 
   def apply(polygon: Polygon, size: Int = 3, step: Int = 1): List[Rectangle] = {
-    partitionLiteral { cover(polygon, size, step) }
+    partitionBasic { cover(polygon, size, step) }
   }
 }
