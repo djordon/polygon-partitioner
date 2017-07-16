@@ -1,7 +1,7 @@
 Polygon-partitioner
 ===================
 
-[![Build Status](https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master)](https://travis-ci.org/djordon/polygon-partitioner) 
+[![Build Status](https://travis-ci.org/djordon/polygon-partitioner.svg?branch=master)](https://travis-ci.org/djordon/polygon-partitioner)
 [![Coverage Status](https://coveralls.io/repos/github/djordon/polygon-partitioner/badge.svg?branch=master)](https://coveralls.io/github/djordon/polygon-partitioner?branch=master)
 [![MIT License](https://img.shields.io/github/license/mashape/apistatus.svg)](https://opensource.org/licenses/MIT)
 
@@ -32,7 +32,7 @@ The `polygon-partitioner` package is composed three submodules: `core`, `plot`, 
 If you want to install `polygon-partitioner` and all the submodules, add the following to your `build.sbt` file:
 
 ```scala
-lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git"))
+lazy val partitioner = RootProject(uri("git://github.com/djordon/polygon-partitioner.git#v0.1.0"))
 
 lazy val root = Project("root", file(".")).dependsOn(partitioner)
 ```
@@ -40,7 +40,7 @@ lazy val root = Project("root", file(".")).dependsOn(partitioner)
 If you only want the algorithms in the `core` module and don't care about the plotting and db modules, then you can install it by adding the following to `build.sbt`:
 
 ```scala
-lazy val partitionerUri = uri("git://github.com/djordon/polygon-partitioner.git")
+lazy val partitionerUri = uri("git://github.com/djordon/polygon-partitioner.git#v0.1.0")
 lazy val partitionerCore = ProjectRef(partitionerUri, "core")
 
 lazy val root = Project("root", file(".")).dependsOn(partitionerCore)
@@ -75,7 +75,7 @@ val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder.cover(myPolygon)
 
 Note that the output polygon in the above example is not guaranteed to have as many holes from the input polygon.
 
-For both `createExteriorCover` and `cover`, there are parameters that you can use to tune the coarseness of the cover. The default settings return the finest orthogonal polygon that covers the input using the covering algorithm implemented here. 
+For both `createExteriorCover` and `cover`, there are parameters that you can use to tune the coarseness of the cover. The default settings return the finest orthogonal polygon that covers the input using the covering algorithm implemented here.
 
 
 ### Partitioning an polygon
