@@ -1,6 +1,6 @@
 package org.partitioner.orthogonal
 
-import org.partitioner._
+import org.partitioner.{Chord, Corner, CornerGeometry, CornerLine, Point}
 
 import scala.annotation.switch
 import scala.collection.immutable.TreeSet
