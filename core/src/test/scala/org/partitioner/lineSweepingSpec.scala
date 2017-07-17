@@ -2,7 +2,7 @@ package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import com.vividsolutions.jts.geom.{Polygon, Coordinate, LineString}
-import org.partitioner.partition._
+import org.partitioner.orthogonal._
 
 import scala.collection.immutable.TreeSet
 import scala.language.reflectiveCalls
@@ -11,7 +11,6 @@ import scala.language.reflectiveCalls
 class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
 
   "RectilinearLineSweeping" can {
-    import CornerExtractor.extractCorners
     import CornerLineAdjuster.createLineSweepGroups
     import GeometryUtils.normalizePolygon
 
@@ -23,12 +22,12 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val horizontalLines: List[CornerLine] = lines.filterNot(_.pointsVertically)
           val verticalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = true)
+            extractChordCorners(chords, vertical = true)
           }
 
           val groups: List[List[CornerGeometry]] = createLineSweepGroups {
@@ -87,7 +86,6 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
 class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures {
 
   "CornerLineAdjuster" can {
-    import CornerExtractor.extractCorners
     import CornerLineAdjuster.{adjustCornerGeometries, createLineSweepGroups, setActions}
     import GeometryUtils.normalizePolygon
 
@@ -98,12 +96,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val horizontalLines: List[CornerLine] = lines.filterNot(_.pointsVertically)
           val verticalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = true)
+            extractChordCorners(chords, vertical = true)
           }
 
           val groups: List[List[CornerGeometry]] = createLineSweepGroups {
@@ -130,12 +128,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val horizontalLines: List[CornerLine] = lines.filterNot(_.pointsVertically)
           val verticalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = true)
+            extractChordCorners(chords, vertical = true)
           }
 
           val groups: List[List[CornerGeometry]] = createLineSweepGroups {
@@ -163,12 +161,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val horizontalLines: List[CornerLine] = lines.filterNot(_.pointsVertically)
           val verticalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = true)
+            extractChordCorners(chords, vertical = true)
           }
 
           val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
@@ -196,12 +194,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val verticalLines: List[CornerLine] = lines.filter(_.pointsVertically)
           val horizontalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = false)
+            extractChordCorners(chords, vertical = false)
           }
 
           val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
@@ -229,12 +227,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val horizontalLines: List[CornerLine] = lines.filterNot(_.pointsVertically)
           val verticalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = true)
+            extractChordCorners(chords, vertical = true)
           }
 
           val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
@@ -256,12 +254,12 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
           val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines): (List[Chord], List[CornerLine]) = {
-            OrthogonalPolygonPartitioner.createChordsCornerLines(corners)
+            createChordsCornerLines(corners)
           }
 
           val verticalLines: List[CornerLine] = lines.filter(_.pointsVertically)
           val horizontalChordCorners: List[Corner] = {
-            OrthogonalPolygonPartitioner.extractChordCorners(chords, vertical = false)
+            extractChordCorners(chords, vertical = false)
           }
 
           val adjustedCornerLines: List[CornerLine] = adjustCornerGeometries {
@@ -303,8 +301,8 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
   "OrthogonalPolygonCornerExtender" can {
     "extendCorners" should {
       "extend the corners until they hit the boundary" in {
-        val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures("approximatedPolygon")).head
+        val corners: List[Corner] = extractCorners(fixtures("approximatedPolygon"))
+          .head
 
         val startsVertically: Boolean = !corners.head.pointsVertically
         val vc: List[Corner] = if (startsVertically) corners.init else corners.tail
@@ -323,9 +321,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
       "intersect the boundary at exactly two points" in {
         for (pg <- orthogonalPolygonFixtures.values) {
           val polygon: Polygon = normalizePolygon(pg)
-          val corners: List[Corner] = CornerExtractor
-            .extractCorners(polygon)
-            .flatMap(_.tail)
+          val corners: List[Corner] = extractCorners(polygon).flatMap(_.tail)
 
           val vEdges = extendCorners(corners)(extendVertically = true)
           val hEdges = extendCorners(corners)(extendVertically = false)
@@ -347,7 +343,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
       "create duplicate chords when the corners point in the same direction" in {
         for (polygonName <- List("complexPolygon0", "withChordsPolygon1")) {
           val polygon: Polygon = normalizePolygon(orthogonalPolygonFixtures(polygonName))
-          val corners: List[List[Corner]] = CornerExtractor.extractCorners(polygon)
+          val corners: List[List[Corner]] = extractCorners(polygon)
 
           val extended = extendCorners(corners.flatMap(_.tail))(true)
             .collect { case ch: Chord => ch }

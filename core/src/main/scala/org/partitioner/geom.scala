@@ -4,6 +4,12 @@ import com.vividsolutions.jts.algorithm.{Angle => AngleJTS}
 import com.vividsolutions.jts.geom.{Coordinate, Polygon}
 
 
+/**
+ * A generic point on the plane
+ *
+ * @param x the x-coordinate
+ * @param y the y-coordinate
+ */
 case class Point(x: Double, y: Double)
 
 
@@ -60,6 +66,14 @@ trait CornerGeometry {
 }
 
 
+/**
+ * Class that represents a vertex of an orthogonal polygon
+ *
+ * @param point the coordinates of the vertex
+ * @param isConcave whether or not the interior angle at that point is
+ *                  90 or 270 degrees.
+ * @param angle
+ */
 case class Corner(point: Point, isConcave: Boolean, angle: Int) extends CornerGeometry {
   def toListCorner: List[Corner] = List(this)
 }
@@ -72,14 +86,22 @@ object Corner {
     angle = edgeDirection(coordinates.init)
   )
 
-  def edgeDirection(vec: List[Coordinate]): Int = 
-    AngleJTS.toDegrees(AngleJTS.angle(vec.head, vec.last)).toInt
+  def edgeDirection: PartialFunction[List[Coordinate], Int] = {
+    case a :: b :: Nil => AngleJTS.toDegrees(AngleJTS.angle(a, b)).toInt
+  }
 
-  def isConcaveCorner(corner: List[Coordinate]): Boolean =
-    AngleJTS.angleBetweenOriented(corner(0), corner(1), corner(2)) < 0
+  def isConcaveCorner: PartialFunction[List[Coordinate], Boolean] = {
+    case a :: b :: c :: Nil => AngleJTS.angleBetweenOriented(a, b, c) < 0
+  }
 }
 
-
+/**
+ * A class that represents an interior line of a polygon
+ *
+ * @param source
+ * @param dest
+ * @param angle
+ */
 case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeometry {
   def isConcave: Boolean = true
   def point: Point = source
@@ -88,7 +110,12 @@ case class CornerLine(source: Point, dest: Point, angle: Int) extends CornerGeom
   }
 }
 
-
+/**
+ * A class that represents a chord of an orthogonal polygon
+ *
+ * @param source
+ * @param dest
+ */
 case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   lazy val left: Corner = if (source.x < dest.x) source else dest
 
@@ -102,12 +129,4 @@ case class Chord(source: Corner, dest: Corner) extends CornerGeometry {
   def xMin: Double = if (source.x < dest.x) source.x else dest.x
   def yMax: Double = if (source.y > dest.y) source.y else dest.y
   def yMin: Double = if (source.y < dest.y) source.y else dest.y
-}
-
-case class Vertex(coord: Coordinate, angle: Double)
-
-
-object Vertex {
-  def apply(a: List[Coordinate]) = 
-    new Vertex(a(1), AngleJTS.toDegrees(AngleJTS.angle(a.head, a.tail.head)))
 }

@@ -2,7 +2,18 @@ package org.partitioner
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalactic.TolerantNumerics
-import com.vividsolutions.jts.geom.{Polygon, MultiPoint}
+import com.vividsolutions.jts.algorithm.Angle
+import com.vividsolutions.jts.geom.{Coordinate, MultiPoint, Polygon}
+
+
+case class Vertex(coord: Coordinate, angle: Double)
+
+
+object Vertex {
+  def apply(coordinates: Iterable[Coordinate]) = coordinates match {
+    case b :: c :: Nil => new Vertex(c, Angle.toDegrees(Angle.angle(b, c)))
+  }
+}
 
 
 class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtures {
@@ -14,18 +25,15 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 
     "removeAxisAlignedCollinearity" should {
       "remove redundant points that lie on axis aligned lines" in {
-        val simplified: Polygon = PolygonApproximator
-          .removeAxisAlignedCollinearity(fixtures("redundantBasisPointPolygon"))
+        val simplified: Polygon = removeAxisAlignedCollinearity(fixtures("redundantBasisPointPolygon"))
 
         simplified shouldEqual fixtures("simplePolygon")
       }
 
       "keep redundant points that lie on non-axis aligned lines" in {
-        val simplified: Polygon = PolygonApproximator
-          .removeAxisAlignedCollinearity(fixtures("redundantPointPolygon"))
+        val simplified: Polygon = removeAxisAlignedCollinearity(fixtures("redundantPointPolygon"))
 
-        val nothingHappened: Polygon = PolygonApproximator
-          .removeAxisAlignedCollinearity(fixtures("preDensifiedPolygon"))
+        val nothingHappened: Polygon = removeAxisAlignedCollinearity(fixtures("preDensifiedPolygon"))
 
         simplified shouldEqual fixtures("lessRedundantPointPolygon")
         nothingHappened shouldEqual fixtures("preDensifiedPolygon")
@@ -35,11 +43,18 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
     "densify" should {
       "Do nothing when the tolerance is positive infinity or zero" in {
         for (pg <- fixtures.values) {
-          val newPolygon1 = PolygonApproximator.densify(pg, Double.PositiveInfinity)
+          val newPolygon1 = densify(pg, Double.PositiveInfinity)
           newPolygon1 shouldEqual normalizePolygon(pg)
 
-          val newPolygon2 = PolygonApproximator.densify(pg, 0.0)
+          val newPolygon2 = densify(pg, 0.0)
           newPolygon2 shouldEqual normalizePolygon(pg)
+        }
+      }
+
+      "Increase the number of points along the boundary" in {
+        for (pg <- fixtures.values) {
+          val newPolygon = densify(pg, 0.1)
+          newPolygon.getNumPoints should be >= pg.getNumPoints
         }
       }
     }
@@ -47,11 +62,22 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
     "simplify" should {
       "Do nothing when the tolerance is positive infinity or less than zero" in {
         for (pg <- fixtures.values) {
-          val newPolygon1 = PolygonApproximator.simplify(pg, Double.PositiveInfinity)
+          val newPolygon1 = simplify(pg, Double.PositiveInfinity)
           newPolygon1 shouldEqual normalizePolygon(pg)
 
-          val newPolygon2 = PolygonApproximator.simplify(pg, -1)
+          val newPolygon2 = simplify(pg, -1)
           newPolygon2 shouldEqual normalizePolygon(pg)
+        }
+      }
+
+      "reduce the number of points along the boundary and preserve holes when preserve is true" in {
+        for (pg <- fixtures.values) {
+          val newPolygon1 = simplify(pg, 0.01, true)
+          newPolygon1.getNumPoints should be <= pg.getNumPoints
+          newPolygon1.getNumInteriorRing shouldEqual (pg.getNumInteriorRing)
+
+          val newPolygon2 = simplify(pg, 0.01, false)
+          newPolygon2.getNumPoints should be <= pg.getNumPoints
         }
       }
     }
@@ -61,7 +87,7 @@ class PolygonApproximationSpec extends WordSpec with Matchers with PolygonFixtur
 class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFixtures {
 
   "OrthogonalPolygonBuilder" can {
-     import GeometryUtils.{IterablePolygon, createPolygon}
+     import GeometryUtils.IterablePolygon
 
     "coverCoordinates" should {
       "create a geometry that covers the input coordinates" in {
@@ -74,7 +100,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
             .getCoordinates
             .filter(p => Math.random() > 0.5)
 
-          val cover = OrthogonalPolygonBuilder.coverCoordinates(points)
+          val cover = coverCoordinates(points)
 
           cover.contains(geometryFactory.createLineString(points)) should be(true)
         }
@@ -83,8 +109,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
 
     "createExteriorCover" should {
       "create the expected polygon" in {
-        val covered: Polygon = OrthogonalPolygonBuilder
-          .createExteriorCover(fixtures("preDensifiedPolygon"))
+        val covered: Polygon = createExteriorCover(fixtures("preDensifiedPolygon"))
 
         covered shouldEqual (fixtures("approximatedPolygon"))
       }
@@ -92,7 +117,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
       "create an orthogonal polygon" in {
         for (i <- 0 until 10) {
           val randomPolygon: Polygon = generatePolygon()
-          val randomCover: Polygon = OrthogonalPolygonBuilder.createExteriorCover(randomPolygon)
+          val randomCover: Polygon = createExteriorCover(randomPolygon)
           val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
           val vecs: List[Vertex] = randomCover
@@ -109,11 +134,10 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
       }
 
       "cover the polygon" in {
-        val covered: Polygon = OrthogonalPolygonBuilder
-          .createExteriorCover(fixtures("preDensifiedPolygon"))
+        val covered: Polygon = createExteriorCover(fixtures("preDensifiedPolygon"))
 
         val randomPolygon: Polygon = generatePolygon()
-        val randomCover: Polygon = OrthogonalPolygonBuilder.createExteriorCover(randomPolygon)
+        val randomCover: Polygon = createExteriorCover(randomPolygon)
 
         covered covers fixtures("preDensifiedPolygon") should be (true)
         randomCover covers randomPolygon should be (true)
@@ -122,8 +146,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
 
     "cover" should {
       "create the expected polygon" in {
-        val covered: Polygon = OrthogonalPolygonBuilder
-          .cover(fixtures("preDensifiedPolygon"))
+        val covered: Polygon = cover(fixtures("preDensifiedPolygon"))
 
         covered shouldEqual (fixtures("approximatedPolygon"))
       }
@@ -131,7 +154,7 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
       "create an orthogonal polygon" in {
         for (i <- 0 until 10) {
           val randomPolygon: Polygon = generatePolygon()
-          val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+          val randomCover: Polygon = cover(randomPolygon)
           val axisAlignedAngles: Set[Double] = Set(0.0, 90.0, 180.0, -90.0, 270.0)
 
           val vecs: List[Vertex] = randomCover
@@ -149,10 +172,10 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
 
       "cover the polygon" in {
         for (pg <- fixtures.values) {
-          val covered: Polygon = OrthogonalPolygonBuilder.cover(pg)
+          val covered: Polygon = cover(pg)
 
           val randomPolygon: Polygon = generatePolygon()
-          val randomCover: Polygon = OrthogonalPolygonBuilder.cover(randomPolygon)
+          val randomCover: Polygon = cover(randomPolygon)
 
           covered covers pg should be(true)
           randomCover covers randomPolygon should be(true)
@@ -163,42 +186,13 @@ class OrthogonalPolygonBuilderSpec extends WordSpec with Matchers with PolygonFi
     "createInteriorCover" should {
       "return polygons that lay within the original polygon" in {
         for ((name, polygon) <- fixtures) {
-          val interior: List[Polygon] = OrthogonalPolygonBuilder
-            .createInteriorCover(polygon)
+          val interior: List[Polygon] = createInteriorCover(polygon)
 
-          val exterior: Polygon = createPolygon(polygon.getExteriorRing.getCoordinates)
+          val exterior: Polygon = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
 
           for (pg <- interior)
             exterior contains pg should be (true)
         }
-      }
-    }
-
-    "approximate" should {
-      "lead to better approximations as densifyTolerance decreases" in {
-        val approximated0: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=0.01)
-
-        val approximated1: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=0.1)
-
-        val approximated2: Polygon = OrthogonalPolygonBuilder
-          .approximate(fixtures("housePolygon"), simplifyTolerance=0, densifyTolerance=1)
-
-        val diffArea0: Double = approximated0
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        val diffArea1: Double = approximated1
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        val diffArea2: Double = approximated2
-          .difference(fixtures("housePolygon"))
-          .getArea
-
-        diffArea0 should be < diffArea1
-        diffArea1 should be < diffArea2
       }
     }
   }

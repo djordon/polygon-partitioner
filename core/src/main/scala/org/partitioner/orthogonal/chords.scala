@@ -1,6 +1,6 @@
-package org.partitioner.partition
+package org.partitioner.orthogonal
 
-import org.partitioner._
+import org.partitioner.{Chord, Corner, CornerGeometry}
 
 import scala.collection.immutable.TreeMap
 
@@ -56,8 +56,8 @@ object OrthogonalPolygonChordReducer {
   }
 
   def computeIntersections(chords: List[Chord]): List[(Chord, Chord)] = {
-    val horizontalChords: List[CornerGeometry] = chords.flatMap { ch =>
-      if (ch.pointsVertically) List(ch) else ch.toListCorner
+    val horizontalChords: List[CornerGeometry] = chords.flatMap {
+      ch => if (ch.pointsVertically) List(ch) else ch.toListCorner
     }
 
     val lineContainer: ChordContainer = horizontalChords
