@@ -3,30 +3,23 @@ package org.partitioner.orthogonal
 import org.partitioner._
 
 
-object makeRectangleCorners extends Function1[List[List[Corner]], List[CornerGeometry]] {
+private[partitioner] object createInteriorLines
+  extends Function1[List[List[Corner]], List[CornerGeometry]] {
 
   import OrthogonalPolygonCornerExtender.extendCorners
 
-  private[partitioner] def createInteriorLines(
-      corners: List[List[Corner]]): List[CornerGeometry] = {
+  def apply(corners: List[List[Corner]]): List[CornerGeometry] = {
 
     val co: List[Corner] = corners.flatMap(_.tail)
-
     extendCorners(co)(true) ::: extendCorners(co)(false)
   }
+}
 
-  private[partitioner] def extractChordCorners(
-      chords: List[Chord],
-      vertical: Boolean): List[Corner] = {
 
-    chords
-      .filter(_.pointsVertically == vertical)
-      .flatMap(_.toListCorner)
-      .map(_.copy(isConcave = false))
+private[partitioner] object createChordsCornerLines
+  extends Function1[List[List[Corner]], (List[Chord], List[CornerLine])] {
 
-  }
-
-  private[partitioner] def separateChordsCornerLines(
+  def separateChordsCornerLines(
       interiorLines: List[CornerGeometry]): (List[Chord], List[CornerLine]) = {
 
     val chords: List[Chord] = OrthogonalPolygonChordReducer.reduceChords {
@@ -46,9 +39,25 @@ object makeRectangleCorners extends Function1[List[List[Corner]], List[CornerGeo
     (chords, lines)
   }
 
-  private[partitioner] def createChordsCornerLines: List[List[Corner]] => (List[Chord], List[CornerLine]) = {
-    (createInteriorLines _) andThen (separateChordsCornerLines _)
+  def apply(corners: List[List[Corner]]): (List[Chord], List[CornerLine]) = {
+    createInteriorLines.andThen(separateChordsCornerLines)(corners)
   }
+}
+
+
+private[partitioner] object extractChordCorners
+  extends Function2[List[Chord], Boolean, List[Corner]] {
+
+  def apply(chords: List[Chord], vertical: Boolean): List[Corner] = chords
+    .filter(_.pointsVertically == vertical)
+    .flatMap(_.toListCorner)
+    .map(_.copy(isConcave = false))
+}
+
+
+
+private[partitioner] object makeRectangleCorners
+  extends Function1[List[List[Corner]], List[CornerGeometry]] {
 
   def apply(corners: List[List[Corner]]): List[CornerGeometry] = {
 
@@ -56,17 +65,13 @@ object makeRectangleCorners extends Function1[List[List[Corner]], List[CornerGeo
 
     val horizontalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries {
       lines.filterNot(_.pointsVertically) ::: extractChordCorners(chords, true)
-    } {
-      false
-    }
+    } { false }
 
     val verticalLines: List[CornerLine] = CornerLineAdjuster.adjustCornerGeometries {
       horizontalLines.flatMap(_.toListCorner) :::
         lines.filter(_.pointsVertically) :::
         extractChordCorners(chords, false)
-    } {
-      true
-    }
+    } { true }
 
     val convexCorners = corners.flatMap(_.tail).filterNot(_.isConcave)
 

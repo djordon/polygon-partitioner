@@ -3,11 +3,11 @@ package org.partitioner.orthogonal
 import org.partitioner._
 
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult, search}
-import scala.language.implicitConversions
 
 
-object extractRectangles extends Function1[List[CornerGeometry], List[Rectangle]]
-                            with RectangleEndpointExtractor {
+object extractRectangles
+  extends Function1[List[CornerGeometry], List[Rectangle]]
+  with RectangleEndpointExtractor {
 
   private[this] def extractIndex(sr: SearchResult): Int = sr match {
     case Found(i) => i + 1
