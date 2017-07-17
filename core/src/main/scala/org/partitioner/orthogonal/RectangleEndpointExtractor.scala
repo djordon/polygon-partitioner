@@ -52,8 +52,8 @@ private[orthogonal] trait RectangleEndpointExtractor {
   }
 
   private[this] def cornerFolder(
-                                  stacks: EndpointStacks,
-                                  corner: CornerGeometry): EndpointStacks = {
+      stacks: EndpointStacks,
+      corner: CornerGeometry): EndpointStacks = {
 
     corner match {
       case ex: CornerLine => stackExtendedCorner(ex, stacks)
