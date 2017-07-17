@@ -56,21 +56,21 @@ Documentation
 If you want to approximate a polygon by an orthogonal polygon, do something like
 
 ```scala
-import org.partitioner.OrthogonalPolygonBuilder
+import org.partitioner.createExteriorCover
 import com.vividsolutions.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
-val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder.createExteriorCover(myPolygon)
+val orthogonalPolygon: Polygon = createExteriorCover(myPolygon)
 ```
 
 The above does not handle holes in the input. For that, use the `cover` method, which attempts to accommodate holes. Here is an example:
 
 ```scala
-import org.partitioner.OrthogonalPolygonBuilder
+import org.partitioner.cover
 import com.vividsolutions.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
-val orthogonalPolygon: Polygon = OrthogonalPolygonBuilder.cover(myPolygon)
+val orthogonalPolygon: Polygon = cover(myPolygon)
 ```
 
 Note that the output polygon in the above example is not guaranteed to have as many holes from the input polygon.
@@ -83,22 +83,22 @@ For both `createExteriorCover` and `cover`, there are parameters that you can us
 If you want to partition an orthogonal polygon into non-overlapping rectangles, use the following
 
 ```scala
-import org.partitioner.orthogonal.OrthogonalPolygonPartitioner
+import org.partitioner.orthogonal.partition
 import org.partitioner.Rectangle
 import com.vividsolutions.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
-val rectangles: List[Rectangle] = OrthogonalPolygonPartitioner.partition(myPolygon)
+val rectangles: List[Rectangle] = partition(myPolygon)
 ```
 
 If you want to find a collection of non-overlapping rectangles whose union covers the input, use the following
 
 ```scala
-import org.partitioner.{PolygonPartitioner, Rectangle}
+import org.partitioner.{decompose, Rectangle}
 import com.vividsolutions.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
-val rectangles: List[Rectangle] = PolygonPartitioner.partition(myPolygon)
+val rectangles: List[Rectangle] = decompose(myPolygon)
 ```
 
 Note that, under the hood, `PolygonPartitioner.partition` calls the `cover` method followed by the orthogonal polygon `partition` method. The `cover` method can be relatively slow for polygons with holes and many points along the boundary.
