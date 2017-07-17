@@ -1,7 +1,7 @@
 package org.partitioner
 
 import com.vividsolutions.jts.geom.Polygon
-import org.partitioner.orthogonal.partitionBasic
+import orthogonal.{extractCorners, makeRectangleCorners, extractRectangles}
 
 
 /**
@@ -23,6 +23,8 @@ import org.partitioner.orthogonal.partitionBasic
 object decompose extends Function3[Polygon, Int, Int, List[Rectangle]] {
 
   def apply(polygon: Polygon, size: Int = 3, step: Int = 1): List[Rectangle] = {
-    partitionBasic { cover(polygon, size, step) }
+    extractCorners
+      .andThen(makeRectangleCorners)
+      .andThen(extractRectangles)(cover(polygon, size, step))
   }
 }
