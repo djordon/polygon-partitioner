@@ -2,6 +2,8 @@ package org.partitioner.orthogonal
 
 import org.partitioner._
 
+import scala.language.implicitConversions
+
 
 case class EndpointStacks(
     upperLeft: List[Point] = Nil,
@@ -13,7 +15,7 @@ case class EndpointStacks(
 }
 
 
-trait RectangleEndpointExtractor {
+private[orthogonal] trait RectangleEndpointExtractor {
   private[this] implicit def pointToListPoint(pt: Point): List[Point] = List(pt)
 
   private[this] def stackExtendedCorner(ex: CornerLine, stacks: EndpointStacks): EndpointStacks = {
@@ -60,7 +62,7 @@ trait RectangleEndpointExtractor {
     }
   }
 
-  private[this] def extractRectangleEndpoints(
+  def extractRectangleEndpoints(
       cornersPoints: List[CornerGeometry]): EndpointStacks = {
 
     cornersPoints.foldLeft(EndpointStacks())(cornerFolder)
