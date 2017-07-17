@@ -24,14 +24,14 @@ class GeometriesSpec extends WordSpec with Matchers with PolygonFixtures {
   "Corner" should {
     "toListCorner should contain one element" in {
       for (pg <- fixtures.values) {
-        val corners = CornerExtractor.extractCorners(pg)
+        val corners = extractCorners(pg)
         corners.flatten.map(_.toListCorner.length).toSet should be (Set(1))
       }
     }
 
     "toListCorner should contain itself" in {
       for (pg <- fixtures.values) {
-        val corners = CornerExtractor.extractCorners(pg).flatten
+        val corners = extractCorners(pg).flatten
         corners.map(cn => cn.toListCorner.head == cn).toSet should be (Set(true))
       }
     }

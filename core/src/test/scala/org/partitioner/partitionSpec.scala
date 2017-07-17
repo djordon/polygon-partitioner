@@ -15,13 +15,13 @@ object RectangleUnion {
       List(new Coordinate(r.upperLeft.x, r.upperLeft.y),
         new Coordinate(r.lowerRight.x, r.lowerRight.y))
     }
-      .map(OrthogonalPolygonBuilder.coverCoordinates(_))
+      .map(coverCoordinates(_))
 
     val union: Polygon = CascadedPolygonUnion
       .union(envelopes.asJavaCollection)
       .asInstanceOf[Polygon]
 
-    PolygonAugmenter.removeAxisAlignedCollinearity(union)
+    removeAxisAlignedCollinearity(union)
   }
 }
 
@@ -32,12 +32,10 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
   "OrthogonalPolygonPartitioner" can {
     "createChordsCornerLines" should {
-      import OrthogonalPolygonPartitioner.createChordsCornerLines
-
       "create a list of CornerLines whose source isn't an endpoint of a chord" in {
         for (pg <- orthogonalPolygonFixtures.values) {
           val polygon: Polygon = normalizePolygon(pg)
-          val corners: List[List[Corner]] = CornerExtractor.extractCorners(polygon)
+          val corners: List[List[Corner]] = extractCorners(polygon)
 
           val (chords, lines) = createChordsCornerLines(corners)
 
@@ -56,8 +54,8 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     }
     "extractCorners" should {
       "create a corner for each coordinate in a polygon" in {
-        val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures("approximatedPolygon")).head
+        val corners: List[Corner] = extractCorners(fixtures("approximatedPolygon"))
+          .head
 
         val points: Iterable[Point] = fixtures("approximatedPolygon")
           .map(c => Point(c.x, c.y))
@@ -66,8 +64,8 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
       }
 
       "calculate predictable angles for the corners" in {
-        val corners: List[Corner] = CornerExtractor
-          .extractCorners(fixtures("approximatedPolygon")).head
+        val corners: List[Corner] = extractCorners(fixtures("approximatedPolygon"))
+          .head
 
         val angles: List[Int] = List(0, 90, 0, 90, 0, -90, 180, 90, 0)
 
@@ -76,7 +74,6 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
     }
 
     "partition" should {
-      import OrthogonalPolygonPartitioner.partition
       "extract non-degenerate rectangles from an orthogonal polygon" in {
         val poly1: Polygon = fixtures("approximatedPolygon")
           .norm()
@@ -91,7 +88,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
         recs1.map(isRectangle).reduce(_ && _) should be (true)
 
-        val poly2: Polygon = OrthogonalPolygonBuilder.createExteriorCover(generatePolygon())
+        val poly2: Polygon = createExteriorCover(generatePolygon())
         val recs2: List[Rectangle] = partition(poly2)
 
         recs2.map(isRectangle).reduce(_ && _) should be (true)
@@ -103,7 +100,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
 
           val reconstructedPolygon: Polygon = List(CascadedPolygonUnion
             .union(rectangles.asJavaCollection))
-            .collect { case p: Polygon => PolygonAugmenter.removeAxisAlignedCollinearity(p) }
+            .collect { case p: Polygon => removeAxisAlignedCollinearity(p) }
             .head
 
           reconstructedPolygon shouldEqual normalizePolygon(polygon)
@@ -118,7 +115,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         ).map(fixtures(_))
 
         val partitions = polygons
-            .map(OrthogonalPolygonPartitioner.partition)
+            .map(partition)
             .map(rectangles2Polygon)
 
         for (partitionPolygon <- partitions zip polygons)
@@ -133,7 +130,7 @@ class PolygonPartitionSpec extends WordSpec with Matchers with PolygonFixtures {
         ).map(fixtures(_))
 
         val partitions: List[List[Rectangle]] = polygons
-          .map(OrthogonalPolygonPartitioner.partition)
+          .map(partition)
 
         partitions(0).length shouldEqual 4
         partitions(1).length shouldEqual 5
@@ -170,7 +167,7 @@ class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
         val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
         val corners: List[List[Corner]] = polygons
           .map(_.toList.tail)
-          .map(CornerExtractor.makeCorners)
+          .map(makeCorners)
 
         corners.map(_.length) shouldEqual polygons.map(_.getExteriorRing.getNumPoints)
       }
@@ -180,14 +177,14 @@ class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
         val cornersInit: List[List[Corner]] = polygons
           .map(normalizePolygon)
           .map(_.toList.init)
-          .map(CornerExtractor.makeCorners)
+          .map(makeCorners)
 
         cornersInit.map(_.head.angle == 90).reduce(_ && _) should be (true)
 
         val cornersTail: List[List[Corner]] = polygons
           .map(normalizePolygon)
           .map(_.toList.tail)
-          .map(CornerExtractor.makeCorners)
+          .map(makeCorners)
 
         cornersTail.map(_.head.angle == 0).reduce(_ && _) should be (true)
       }
@@ -197,7 +194,7 @@ class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
       "Create a corner for each vertex, including vertices on the holes" in {
         val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
         val corners: List[List[Corner]] = polygons
-          .map(CornerExtractor.extractCorners(_).flatten)
+          .map(extractCorners(_).flatten)
 
         corners.map(_.length) shouldEqual polygons.map(_.getNumPoints)
       }
@@ -205,7 +202,7 @@ class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
       "create a list where the first corner and the last corner are the sane" in {
         val polygons: List[Polygon] = orthogonalPolygonFixtures.toList.map(_._2)
         val matched: List[Boolean] = polygons
-          .map(CornerExtractor.extractCorners(_))
+          .map(extractCorners(_))
           .flatMap(_.map(cns => cns.head == cns.last))
 
         matched.reduce(_ && _) should be(true)
@@ -217,8 +214,6 @@ class CornerExtractorSpec extends WordSpec with Matchers with PolygonFixtures {
 
 class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
   import OrthogonalPolygonChordReducer.{reduceChords, computeIntersections, removeDuplicateChords}
-  import OrthogonalPolygonPartitioner.createInteriorLines
-  import CornerExtractor.extractCorners
 
   "OrthogonalPolygonChordReducer" can {
     "computeIntersections" should {
@@ -305,7 +300,6 @@ class ChordReducerSpec extends WordSpec with Matchers with PolygonFixtures {
 
 
 class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures {
-  import PolygonPartitioner.partition
   import RectangleUnion.rectangles2Polygon
 
   "PolygonPartitioner" can {
@@ -313,7 +307,7 @@ class PolygonPartitionerSpec extends WordSpec with Matchers with PolygonFixtures
       "Create a rectangles that union to a polygon that cover the original" in {
         for (pg <- fixtures.values) {
           val pgWithoutHoles = geometryFactory.createPolygon(pg.getExteriorRing.getCoordinates)
-          val rectangles: List[Rectangle] = partition(pgWithoutHoles)
+          val rectangles: List[Rectangle] = decompose(pgWithoutHoles)
           val polygon: Polygon = rectangles2Polygon(rectangles)
 
           polygon.contains(pgWithoutHoles) should be(true)
