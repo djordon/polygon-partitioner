@@ -6,11 +6,16 @@ import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
 import org.partitioner.GeometryUtils.{IterablePolygon, geometryFactory}
 
 
-object createExteriorRingCover extends Function3[Polygon, Int, Int, Polygon] {
+private[partitioner] object coverCoordinates
+  extends Function1[Iterable[Coordinate], Geometry] {
 
-  private[this] def coverCoordinates(points: Iterable[Coordinate]): Geometry = {
+  def apply(points: Iterable[Coordinate]): Geometry = {
     geometryFactory.createLineString(points.toArray).getEnvelope
   }
+}
+
+
+object createExteriorRingCover extends Function3[Polygon, Int, Int, Polygon] {
 
   def apply(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val simpler: Polygon = removeAxisAlignedCollinearity(polygon)
@@ -54,6 +59,17 @@ object createExteriorCover extends Function3[Polygon, Int, Int, Polygon] {
 }
 
 
+private[partitioner] object createInteriorCover
+  extends Function3[Polygon, Int, Int, List[Polygon]] {
+
+  def apply(polygon: Polygon, size: Int = 3, step: Int = 1): List[Polygon] = {
+
+    val ext = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
+    createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
+  }
+}
+
+
 /**
  * Creates an orthogonal polygon that covers the input polygon.
  *
@@ -73,15 +89,6 @@ object createExteriorCover extends Function3[Polygon, Int, Int, Polygon] {
  * @return returns an orthogonal polygon.
  */
 object cover extends Function3[Polygon, Int, Int, Polygon] {
-
-  private[partitioner] def createInteriorCover(
-      polygon: Polygon,
-      size: Int = 3,
-      step: Int = 1): List[Polygon] = {
-
-    val ext = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
-    createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
-  }
 
   def apply(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
     val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)

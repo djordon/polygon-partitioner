@@ -4,6 +4,25 @@ import com.vividsolutions.jts.geom.{Coordinate, LinearRing, Polygon}
 import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
+/**
+ * Returns a topologically equivalent polygon where axis aligned line
+ * segments are as long as possible.
+ *
+ * A polygon can contain superfluous points along the boundary, where
+ * removing such points does not change the shape. This method removes
+ * instances where these superfluous points occur on axis aligned line
+ * segments.
+ *
+ * The input polygon is not modified.
+ *
+ * An example of this is where the input is a rectangle with 5 points
+ * (where a point was added at the midpoint of the top edge). This
+ * function would return the same rectangle, but with 4 points.
+ *
+ * @param polygon the input polygon
+ *
+ * @return an modified version of the input polygon.
+ */
 object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
 
   private[this] def polygon2Vertices(pg: Polygon): List[Coordinate] = {
@@ -45,25 +64,6 @@ object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
     polygon2Vertices _ andThen filterVertices _ andThen vertices2LinearRing _
   }
 
-  /**
-   * Returns a topologically equivalent polygon where axis aligned line
-   * segments are as long as possible.
-   *
-   * A polygon can contain superfluous points along the boundary, where
-   * removing such points does not change the shape. This method removes
-   * instances where these superfluous points occur on axis aligned line
-   * segments.
-   *
-   * The input polygon is not modified.
-   *
-   * An example of this is where the input is a rectangle with 5 points
-   * (where a point was added at the midpoint of the top edge). This
-   * function would return the same rectangle, but with 4 points.
-   *
-   * @param polygon the input polygon
-   *
-   * @return an modified version of the input polygon.
-   */
   def apply(polygon: Polygon): Polygon = {
     val shell: LinearRing = removeAxisAlignedCollinearitySimple(polygon)
     val holes: List[LinearRing] = polygon
