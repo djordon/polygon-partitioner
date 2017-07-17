@@ -21,7 +21,7 @@ This package implements two main methods:
 
     This method handles polygons with holes and chords.
 
-The functions in this package use [JTS](https://github.com/locationtech/jts) Polygons as the class for the input polygon.
+Note that the orthogonal polygons used as input are assumed to have edges that align with either the x-axis and y-axis. Also, the functions in this package use [JTS](https://github.com/locationtech/jts) Polygons as the class for the input polygon.
 
 
 Installation
