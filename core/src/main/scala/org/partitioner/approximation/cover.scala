@@ -1,73 +1,7 @@
 package org.partitioner
 
-import scala.collection.JavaConverters._
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, LinearRing, Polygon}
-import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import com.vividsolutions.jts.geom.{LinearRing, Polygon}
 import org.partitioner.GeometryUtils.{IterablePolygon, geometryFactory}
-
-
-private[partitioner] object coverCoordinates
-  extends Function1[Iterable[Coordinate], Geometry] {
-
-  def apply(points: Iterable[Coordinate]): Geometry = {
-    geometryFactory.createLineString(points.toArray).getEnvelope
-  }
-}
-
-
-object createExteriorRingCover extends Function3[Polygon, Int, Int, Polygon] {
-
-  def apply(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
-    val simpler: Polygon = removeAxisAlignedCollinearity(polygon)
-    val length: Int = size.max(3)
-    val window: Int = step.min(length - 2).max(1)
-
-    val coveringRectangles: List[Geometry] = simpler
-      .sliding(length, window)
-      .map(coverCoordinates)
-      .toList
-
-    removeAxisAlignedCollinearity {
-      CascadedPolygonUnion
-        .union(coveringRectangles.asJavaCollection)
-        .asInstanceOf[Polygon]
-    }
-  }
-}
-
-
-/**
- * Creates an orthogonal polygon that covers the input polygon
- *
- * @param polygon the input polygon.
- * @param size a value that sets how coarse the output should be.
- *             The larger the value, the more coarse the out put will be.
- *             Must be greater than 2.
- * @param step a value that helps set how coarse the output should be.
- *             The larger the value, the more coarse the out put will be.
- *             Must be greater than 0 and less size - 1.
- *
- * @return Returns an orthogonal polygon.
- */
-object createExteriorCover extends Function3[Polygon, Int, Int, Polygon] {
-
-  def apply(polygon: Polygon, size: Int = 3, step: Int = 1): Polygon = {
-
-    val boundaryCover: Polygon = createExteriorRingCover(polygon, size, step)
-    geometryFactory.createPolygon(boundaryCover.getExteriorRing.getCoordinates)
-  }
-}
-
-
-private[partitioner] object createInteriorCover
-  extends Function3[Polygon, Int, Int, List[Polygon]] {
-
-  def apply(polygon: Polygon, size: Int = 3, step: Int = 1): List[Polygon] = {
-
-    val ext = geometryFactory.createPolygon(polygon.getExteriorRing.getCoordinates)
-    createExteriorRingCover(polygon, size, step).getHoles.filter(ext.covers)
-  }
-}
 
 
 /**
