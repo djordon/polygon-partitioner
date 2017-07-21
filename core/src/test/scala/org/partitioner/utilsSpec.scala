@@ -6,7 +6,7 @@ import com.vividsolutions.jts.geom.Polygon
 
 
 class GeometryUtilsSpec extends WordSpec with Matchers with PolygonFixtures {
-  import GeometryUtils.isOrthogonalPolygon
+  import orthogonal.isOrthogonalPolygon
 
   "loadResources" can {
     "load polygons from the resources folder" in {
