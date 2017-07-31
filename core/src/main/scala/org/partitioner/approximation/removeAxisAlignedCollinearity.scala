@@ -43,9 +43,7 @@ object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
   }
 
   private[this] def rectilinearFolder(a: List[Coordinate], b: Coordinate): List[Coordinate] = {
-    if (isAxisAligned {
-      b :: a.take(2)
-    }) b :: a.tail else b :: a
+    if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
   private[this] def vertices2LinearRing(vertices: List[Coordinate]): LinearRing = {
