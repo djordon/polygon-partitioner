@@ -78,7 +78,7 @@ Note that the output polygon in the above example is not guaranteed to have as m
 For both `createExteriorCover` and `cover`, there are parameters that you can use to tune the coarseness of the cover. The default settings return the finest orthogonal polygon that covers the input using the covering algorithm implemented here.
 
 
-### Partitioning an polygon
+### Partitioning a polygon
 
 If you want to partition an orthogonal polygon into non-overlapping rectangles, use the following
 
