@@ -17,5 +17,5 @@ object isOrthogonalPolygon extends Function1[Polygon, Boolean] {
     .toList
     .sliding(2, 1)
     .collect { case a :: b :: Nil => a.x == b.x || a.y == b.y }
-    .reduce(_ && _)
+    .forall(_ == true)
 }
