@@ -1,8 +1,9 @@
 import Dependencies._
 
+
 val commonSettings = Seq(
   organization := "org.partitioner",
-  scalaVersion := "2.12.3",
+  scalaVersion in ThisBuild := "2.12.3",
   resolvers += Resolver.sonatypeRepo("releases"),
   fork in run := true,
   sourcesInBase := false,
