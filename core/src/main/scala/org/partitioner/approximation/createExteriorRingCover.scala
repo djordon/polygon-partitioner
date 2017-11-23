@@ -2,8 +2,8 @@ package org.partitioner
 
 import GeometryUtils.IterablePolygon
 import scala.collection.JavaConverters._
-import com.vividsolutions.jts.geom.{Geometry, Polygon}
-import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import org.locationtech.jts.geom.{Geometry, Polygon}
+import org.locationtech.jts.operation.union.CascadedPolygonUnion
 
 
 object createExteriorRingCover extends Function3[Polygon, Int, Int, Polygon] {

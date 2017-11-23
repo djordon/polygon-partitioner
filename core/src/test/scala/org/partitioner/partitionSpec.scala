@@ -1,8 +1,8 @@
 package org.partitioner
 
 import org.scalatest.WordSpec
-import com.vividsolutions.jts.geom.{Coordinate, Geometry, Polygon}
-import com.vividsolutions.jts.operation.union.CascadedPolygonUnion
+import org.locationtech.jts.geom.{Coordinate, Geometry, Polygon}
+import org.locationtech.jts.operation.union.CascadedPolygonUnion
 import org.partitioner.orthogonal._
 
 import scala.collection.JavaConverters._

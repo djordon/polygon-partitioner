@@ -2,8 +2,8 @@ package org.partitioner
 
 import org.scalatest.WordSpec
 import org.scalactic.TolerantNumerics
-import com.vividsolutions.jts.algorithm.Angle
-import com.vividsolutions.jts.geom.{Coordinate, MultiPoint, Polygon}
+import org.locationtech.jts.algorithm.Angle
+import org.locationtech.jts.geom.{Coordinate, MultiPoint, Polygon}
 
 
 case class Vertex(coord: Coordinate, angle: Double)

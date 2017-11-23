@@ -1,7 +1,7 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom._
-import com.vividsolutions.jts.io.WKTReader
+import org.locationtech.jts.geom._
+import org.locationtech.jts.io.WKTReader
 
 import scala.io.Source
 

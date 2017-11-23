@@ -1,7 +1,7 @@
 package org.partitioner.db
 
-import com.vividsolutions.jts.io.WKTReader
-import com.vividsolutions.jts.geom.MultiPolygon
+import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.geom.MultiPolygon
 
 import doobie.imports._
 import scalaz.concurrent.Task

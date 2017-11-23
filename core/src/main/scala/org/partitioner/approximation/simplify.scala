@@ -1,8 +1,8 @@
 package org.partitioner
 
 import scala.annotation.switch
-import com.vividsolutions.jts.simplify.{DouglasPeuckerSimplifier, TopologyPreservingSimplifier}
-import com.vividsolutions.jts.geom.{Geometry, Polygon}
+import org.locationtech.jts.simplify.{DouglasPeuckerSimplifier, TopologyPreservingSimplifier}
+import org.locationtech.jts.geom.{Geometry, Polygon}
 
 
 /**

@@ -1,7 +1,7 @@
 package org.partitioner
 
 import org.scalatest.WordSpec
-import com.vividsolutions.jts.geom.{Polygon, Coordinate, LineString}
+import org.locationtech.jts.geom.{Polygon, Coordinate, LineString}
 import org.partitioner.orthogonal._
 
 import scala.collection.immutable.TreeSet

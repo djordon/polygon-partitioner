@@ -1,6 +1,6 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.{LinearRing, Polygon}
+import org.locationtech.jts.geom.{LinearRing, Polygon}
 import org.partitioner.GeometryUtils.{IterablePolygon, geometryFactory}
 
 

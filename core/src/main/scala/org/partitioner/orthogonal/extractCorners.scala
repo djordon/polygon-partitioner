@@ -1,6 +1,6 @@
 package org.partitioner.orthogonal
 
-import com.vividsolutions.jts.geom.{Coordinate, Polygon}
+import org.locationtech.jts.geom.{Coordinate, Polygon}
 import org.partitioner.{Corner, GeometryUtils}
 import GeometryUtils.IterablePolygon
 

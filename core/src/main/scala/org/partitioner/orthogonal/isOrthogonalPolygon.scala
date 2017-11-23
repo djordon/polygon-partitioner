@@ -1,7 +1,7 @@
 package org.partitioner.orthogonal
 
 import org.partitioner.GeometryUtils.IterablePolygon
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 
 /**

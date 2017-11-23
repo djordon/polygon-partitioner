@@ -1,7 +1,7 @@
 package org.partitioner
 
 import org.scalatest.WordSpec
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 
 
