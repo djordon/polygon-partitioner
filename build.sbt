@@ -3,7 +3,7 @@ import Dependencies._
 
 val commonSettings = Seq(
   organization := "org.partitioner",
-  scalaVersion in ThisBuild := "2.12.3",
+  scalaVersion in ThisBuild := "2.12.4",
   resolvers += Resolver.sonatypeRepo("releases"),
   fork in run := true,
   sourcesInBase := false,
@@ -20,7 +20,7 @@ lazy val core = (project in file("core"))
   .settings(
     Seq(
       name := "polygon-partitioner-core",
-      version := "0.1.0",
+      version := "0.1.1",
       coverageEnabled := true
     ),
     libraryDependencies ++= coreDependencies
@@ -31,7 +31,7 @@ lazy val plot = (project in file("plot"))
   .settings(
     Seq(
       name := "polygon-partitioner-plot",
-      version := "0.1.0",
+      version := "0.1.1",
       coverageEnabled := false
     ),
     libraryDependencies ++= plotDependencies)
@@ -42,7 +42,7 @@ lazy val db = (project in file("db"))
   .settings(
     Seq(
       name := "polygon-partitioner-db",
-      version := "0.1.0",
+      version := "0.1.1",
       coverageEnabled := false
     ),
     libraryDependencies ++= dbDependencies)
