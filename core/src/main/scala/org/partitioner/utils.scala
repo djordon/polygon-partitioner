@@ -1,7 +1,7 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom._
-import com.vividsolutions.jts.io.WKTReader
+import org.locationtech.jts.geom._
+import org.locationtech.jts.io.WKTReader
 
 import scala.io.Source
 
@@ -30,25 +30,19 @@ object GeometryUtils {
 
   def normalizePolygon(pg: Polygon): Polygon = pg.norm.asInstanceOf[Polygon]
 
-  /**
-   * Returns a boolean the input polygon is an orthogonal polygon
-   *
-   * @param polygon the input polygon
-   *
-   * @return A boolean indicating whether the input is an orthogonal polygon
-   */
-  def isOrthogonalPolygon(polygon: Polygon): Boolean = {
-    polygon
-      .toList
-      .sliding(2, 1)
-      .collect { case a :: b :: Nil => a.x == b.x || a.y == b.y }
-      .reduce(_ && _)
-  }
-
   def loadResources(dir: String) : Map[String, Polygon] = Source
     .fromResource(dir)
     .getLines
     .map(f => (f, Source.fromResource(s"$dir/$f").mkString))
     .toMap
     .mapValues(wktReader.read(_).asInstanceOf[Polygon])
+}
+
+
+private[partitioner] object coverCoordinates
+  extends Function1[Iterable[Coordinate], Geometry] {
+
+  def apply(points: Iterable[Coordinate]): Geometry = {
+    GeometryUtils.geometryFactory.createLineString(points.toArray).getEnvelope
+  }
 }

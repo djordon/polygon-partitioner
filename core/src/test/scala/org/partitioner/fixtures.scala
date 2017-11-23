@@ -1,9 +1,9 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.{GeometryFactory, Polygon}
-import com.vividsolutions.jts.geom.util.AffineTransformation
-import com.vividsolutions.jts.io.WKTReader
-import com.vividsolutions.jts.shape.random.RandomPointsBuilder
+import org.locationtech.jts.geom.{GeometryFactory, Polygon}
+import org.locationtech.jts.geom.util.AffineTransformation
+import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.shape.random.RandomPointsBuilder
 
 import scala.io.Source
 

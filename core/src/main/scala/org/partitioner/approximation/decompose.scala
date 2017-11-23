@@ -1,6 +1,6 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 import orthogonal.{extractCorners, makeRectangleCorners, extractRectangles}
 
 

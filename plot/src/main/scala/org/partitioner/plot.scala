@@ -2,7 +2,7 @@ package org.partitioner.plot
 
 import java.io.File
 
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 import org.partitioner._
 import plotly.element._
 import plotly.layout.{Axis, HoverMode, Layout, Margin}

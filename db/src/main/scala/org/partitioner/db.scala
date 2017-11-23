@@ -1,7 +1,7 @@
 package org.partitioner.db
 
-import com.vividsolutions.jts.io.WKTReader
-import com.vividsolutions.jts.geom.MultiPolygon
+import org.locationtech.jts.io.WKTReader
+import org.locationtech.jts.geom.MultiPolygon
 
 import doobie.imports._
 import scalaz.concurrent.Task
@@ -10,14 +10,15 @@ import scalaz.concurrent.Task
 case class MultiPolygonZip(zipcode: String, multipolygon: MultiPolygon)
 
 
-object PolygonExtractor {
-
-  object MultiPolygonZip {
-    def apply(zc: String, wkt: String) = {
-      val wktReader = new WKTReader()
-      new MultiPolygonZip(zc, wktReader.read(wkt).asInstanceOf[MultiPolygon])
-    }
+object MultiPolygonZip {
+  def apply(zc: String, wkt: String) = {
+    val wktReader = new WKTReader()
+    new MultiPolygonZip(zc, wktReader.read(wkt).asInstanceOf[MultiPolygon])
   }
+}
+
+
+object PolygonExtractor {
 
   def extractZCTAs(numPolygons: Int = 1): List[MultiPolygonZip] = {
     val sysUser = sys.env.get("USER").get

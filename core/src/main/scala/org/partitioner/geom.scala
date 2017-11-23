@@ -1,7 +1,7 @@
 package org.partitioner
 
-import com.vividsolutions.jts.algorithm.{Angle => AngleJTS}
-import com.vividsolutions.jts.geom.{Coordinate, Polygon}
+import org.locationtech.jts.algorithm.{Angle => AngleJTS}
+import org.locationtech.jts.geom.{Coordinate, Polygon}
 
 
 /**

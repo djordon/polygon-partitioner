@@ -1,7 +1,7 @@
 package org.partitioner
 
-import com.vividsolutions.jts.densify.Densifier
-import com.vividsolutions.jts.geom.{Geometry, Polygon}
+import org.locationtech.jts.densify.Densifier
+import org.locationtech.jts.geom.{Geometry, Polygon}
 
 
 /**

@@ -1,6 +1,6 @@
 package org.partitioner.orthogonal
 
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 import org.partitioner.{Rectangle, removeAxisAlignedCollinearity}
 
 

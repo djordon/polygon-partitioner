@@ -1,23 +1,23 @@
 package org.partitioner
 
-import org.scalatest.{Matchers, WordSpec}
-import com.vividsolutions.jts.geom.Polygon
+import org.scalatest.WordSpec
+import org.locationtech.jts.geom.Polygon
 
 
 
-class GeometryUtilsSpec extends WordSpec with Matchers with PolygonFixtures {
-  import GeometryUtils.isOrthogonalPolygon
+class GeometryUtilsSpec extends WordSpec with PolygonFixtures {
+  import orthogonal.isOrthogonalPolygon
 
   "loadResources" can {
     "load polygons from the resources folder" in {
 
       val polygons1: Map[String, Polygon] = GeometryUtils.loadResources("orthogonal-polygons")
-      polygons1.toList.length should be > 0
-      polygons1.values.map(isOrthogonalPolygon).reduce(_ && _) should be (true)
+      assert { polygons1.toList.length > 0 }
+      assert { polygons1.values.forall(isOrthogonalPolygon) }
 
       val polygons2: Map[String, Polygon] = GeometryUtils.loadResources("non-orthogonal-polygon")
-      polygons2.toList.length should be > 0
-      polygons2.values.map(isOrthogonalPolygon).reduce(_ && _) should be (false)
+      assert { polygons2.toList.length > 0 }
+      assert { !polygons2.values.forall(isOrthogonalPolygon) }
 
     }
   }
@@ -25,10 +25,10 @@ class GeometryUtilsSpec extends WordSpec with Matchers with PolygonFixtures {
   "isOrthogonalPolygon" can {
     "tell if the input polygon is orthogonal or not" in {
       for (pg <- nonOrthogonalPolygonFixtures.values)
-        isOrthogonalPolygon(pg) should be (false)
+        assert { !isOrthogonalPolygon(pg) }
 
       for (pg <- orthogonalPolygonFixtures.values)
-        isOrthogonalPolygon(pg) should be (true)
+        assert { isOrthogonalPolygon(pg) }
     }
   }
 }

@@ -1,14 +1,14 @@
 package org.partitioner
 
-import org.scalatest.{Matchers, WordSpec}
-import com.vividsolutions.jts.geom.{Polygon, Coordinate, LineString}
+import org.scalatest.WordSpec
+import org.locationtech.jts.geom.{Polygon, Coordinate, LineString}
 import org.partitioner.orthogonal._
 
 import scala.collection.immutable.TreeSet
 import scala.language.reflectiveCalls
 
 
-class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
+class LineSweepingSpec extends WordSpec with PolygonFixtures {
 
   "RectilinearLineSweeping" can {
     import CornerLineAdjuster.createLineSweepGroups
@@ -39,7 +39,7 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
             .sliding(2, 1)
             .map(g => g.head <= g.last)
 
-          Set(Set(), Set(true)) should contain(isIncreasing.toSet)
+          assert { Set(Set(), Set(true)) contains isIncreasing.toSet }
         }
       }
     }
@@ -56,10 +56,10 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
         val cl3 = CornerLineAdjuster.lineAction(TreeSet(3, 5, 7))(c3)
         val cl4 = CornerLineAdjuster.lineAction(TreeSet(6, 8, 10))(c4)
 
-        cl1.source shouldEqual cl1.dest
-        cl2.source shouldEqual cl2.dest
-        cl3.source shouldEqual cl3.dest
-        cl4.source shouldEqual cl4.dest
+        assert(cl1.source == cl1.dest)
+        assert(cl2.source == cl2.dest)
+        assert(cl3.source == cl3.dest)
+        assert(cl4.source == cl4.dest)
       }
 
       "return a non-degenerate CornerLine if the opened lines doesn't contain the current coordinate" in {
@@ -73,17 +73,17 @@ class LineSweepingSpec extends WordSpec with Matchers with PolygonFixtures {
         val cl3 = CornerLineAdjuster.lineAction(TreeSet(4, 6))(c3)
         val cl4 = CornerLineAdjuster.lineAction(TreeSet(7, 9))(c4)
 
-        cl1.source should not equal cl1.dest
-        cl2.source should not equal cl2.dest
-        cl3.source should not equal cl3.dest
-        cl4.source should not equal cl4.dest
+        assert(cl1.source != cl1.dest)
+        assert(cl2.source != cl2.dest)
+        assert(cl3.source != cl3.dest)
+        assert(cl4.source != cl4.dest)
       }
     }
   }
 }
 
 
-class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures {
+class CornerLineAdjusterSpec extends WordSpec with PolygonFixtures {
 
   "CornerLineAdjuster" can {
     import CornerLineAdjuster.{adjustCornerGeometries, createLineSweepGroups, setActions}
@@ -118,7 +118,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             .map { case (a, c) => c.map(a("toOpen").toSet.contains) }
             .flatten
 
-          Set[Set[Boolean]](Set(), Set(true)) should contain(openedGroups.toSet)
+          assert { Set[Set[Boolean]](Set(), Set(true)) contains openedGroups.toSet }
         }
       }
 
@@ -149,7 +149,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             .flatMap(g => g collect { case cl: CornerLine => cl.source })
             .toSet
 
-          sourcePoints shouldEqual adjusted
+          assert(sourcePoints == adjusted)
         }
       }
     }
@@ -184,7 +184,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             }
           }
 
-          Set(Set(), Set(true)) should contain(isShorter.toSet)
+          assert(Set(Set(), Set(true)) contains isShorter.toSet)
         }
       }
 
@@ -217,7 +217,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             }
           }
 
-          Set(Set(), Set(true)) should contain(isShorter.toSet)
+          assert(Set(Set(), Set(true)) contains isShorter.toSet)
         }
       }
 
@@ -244,7 +244,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             .zip(horizontalLines.sorted(CornerOrderingY))
             .map { case (a, b) => a.source == b.source }
 
-          Set(Set(), Set(true)) should contain(sourcesMatch.toSet)
+          assert(Set(Set(), Set(true)) contains sourcesMatch.toSet)
         }
       }
 
@@ -271,7 +271,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
             .zip(verticalLines.sorted(CornerOrderingX))
             .map { case (a, b) => a.source == b.source }
 
-          Set(Set(), Set(true)) should contain(sourcesMatch.toSet)
+          assert(Set(Set(), Set(true)) contains sourcesMatch.toSet)
         }
       }
     }
@@ -279,7 +279,7 @@ class CornerLineAdjusterSpec extends WordSpec with Matchers with PolygonFixtures
 }
 
 
-class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
+class CornerExtenderSpec extends WordSpec with PolygonFixtures {
   import OrthogonalPolygonCornerExtender.extendCorners
   import GeometryUtils.normalizePolygon
 
@@ -315,7 +315,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
           CornerLine(Point(0.25, 1.5), Point(1.0, 1.5), 0),
           CornerLine(Point(0.5, 1.75), Point(1.0, 1.75), 0)
         )
-        vEdges shouldEqual expectedEdges
+        assert(vEdges == expectedEdges)
       }
 
       "intersect the boundary at exactly two points" in {
@@ -336,7 +336,7 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
             .map(_.getNumPoints)
             .toSet
 
-          Set(Set(), Set(2)) should contain (numIntersections)
+          assert(Set(Set(), Set(2)) contains numIntersections)
         }
       }
 
@@ -353,11 +353,8 @@ class CornerExtenderSpec extends WordSpec with Matchers with PolygonFixtures {
             .toSet
             .intersect(extended.toSet)
 
-          sameChords should not be empty
-
-          sameChords.map { ch =>
-            ch.source.angle == ch.dest.oppositeAngle
-          } should be (Set(true))
+          assert(sameChords.nonEmpty)
+          assert(sameChords.forall { ch => ch.source.angle == ch.dest.oppositeAngle })
         }
       }
     }

@@ -1,6 +1,6 @@
 package org.partitioner
 
-import com.vividsolutions.jts.geom.{Coordinate, LinearRing, Polygon}
+import org.locationtech.jts.geom.{Coordinate, LinearRing, Polygon}
 import GeometryUtils.{IterablePolygon, geometryFactory}
 
 
@@ -25,16 +25,8 @@ import GeometryUtils.{IterablePolygon, geometryFactory}
  */
 object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
 
-  private[this] def polygon2Vertices(pg: Polygon): List[Coordinate] = {
-    val boundary: List[Coordinate] = pg.toList
-    Stream
-      .continually(boundary)
-      .flatten
-      .take(boundary.length * 2)
-      .toList
-  }
-
-  private[this] def filterVertices(vertices: List[Coordinate]): List[Coordinate] = {
+  private[this] def filterVertices(pg: Polygon): List[Coordinate] = {
+    val vertices: List[Coordinate] = pg.toList ::: pg.toList
     val reduced: List[Coordinate] = vertices
       .drop(2)
       .foldLeft(vertices.take(2))(rectilinearFolder)
@@ -51,9 +43,7 @@ object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
   }
 
   private[this] def rectilinearFolder(a: List[Coordinate], b: Coordinate): List[Coordinate] = {
-    if (isAxisAligned {
-      b :: a.take(2)
-    }) b :: a.tail else b :: a
+    if (isAxisAligned { b :: a.take(2) }) b :: a.tail else b :: a
   }
 
   private[this] def vertices2LinearRing(vertices: List[Coordinate]): LinearRing = {
@@ -61,7 +51,7 @@ object removeAxisAlignedCollinearity extends Function1[Polygon, Polygon] {
   }
 
   private[this] def removeAxisAlignedCollinearitySimple: Polygon => LinearRing = {
-    polygon2Vertices _ andThen filterVertices _ andThen vertices2LinearRing _
+    filterVertices _ andThen vertices2LinearRing _
   }
 
   def apply(polygon: Polygon): Polygon = {

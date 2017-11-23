@@ -3,7 +3,7 @@ import sbt._
 
 object Dependencies {
   val coreDependencies = Seq(
-    "com.vividsolutions" % "jts-core" % "1.14.0",
+    "org.locationtech.jts" % "jts-core" % "1.15.0",
     "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   )
   val dbDependencies = Seq(
