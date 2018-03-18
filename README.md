@@ -57,7 +57,7 @@ If you want to approximate a polygon by an orthogonal polygon, do something like
 
 ```scala
 import org.partitioner.createExteriorCover
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
 val orthogonalPolygon: Polygon = createExteriorCover(myPolygon)
@@ -67,7 +67,7 @@ The above does not handle holes in the input. For that, use the `cover` method, 
 
 ```scala
 import org.partitioner.cover
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
 val orthogonalPolygon: Polygon = cover(myPolygon)
@@ -85,7 +85,7 @@ If you want to partition an orthogonal polygon into non-overlapping rectangles, 
 ```scala
 import org.partitioner.orthogonal.partition
 import org.partitioner.Rectangle
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
 val rectangles: List[Rectangle] = partition(myPolygon)
@@ -95,7 +95,7 @@ If you want to find a collection of non-overlapping rectangles whose union cover
 
 ```scala
 import org.partitioner.{decompose, Rectangle}
-import com.vividsolutions.jts.geom.Polygon
+import org.locationtech.jts.geom.Polygon
 
 val myPolygon: Polygon = ...
 val rectangles: List[Rectangle] = decompose(myPolygon)
