@@ -51,7 +51,7 @@ trait AxisAlignedLineSweeper {
       .toList
       .sortBy(_._1)
       .map(_._2)
-    }
+  }
 
   def adjustCornerGeometries(corners: List[CornerGeometry])(
     implicit vertical: Boolean): List[CornerLine] = {
