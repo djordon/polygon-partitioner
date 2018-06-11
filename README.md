@@ -15,13 +15,13 @@ This package implements two main methods:
 
 1.  A method that approximates a polygon by a orthogonal polygon.
 
-    This output is guaranteed to cover the input polygon. There are also methods that allow you to change the coarseness of the approximation.
+    This output is guaranteed to cover the input polygon. You to change the coarseness of the approximation.
 
-2.  A method that partitions a orthogonal polygon into non-overlapping rectangles.
+2.  A method that partitions an orthogonal polygon into non-overlapping rectangles.
 
     This method handles polygons with holes and chords.
 
-Note that the orthogonal polygons used as input are assumed to have edges that align with either the x-axis and y-axis. Also, the functions in this package use [JTS](https://github.com/locationtech/jts) Polygons as the class for the input polygon.
+Note that the orthogonal polygons used as input are assumed to have edges that are parallel to either the x-axis and y-axis. Also, the functions in this package use [JTS](https://github.com/locationtech/jts) Polygons as the class for the input polygon.
 
 
 Installation
